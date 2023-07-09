@@ -14,11 +14,9 @@ export default function App({
 
   return (
      
-      <>
       <Component {...pageProps} />
       <Analytics />
-    </>
-    
+  
     <SessionProvider session={session}>
       <ThemeProvider attribute="class">
         <AnimatePresence mode="wait">
