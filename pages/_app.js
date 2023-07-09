@@ -14,10 +14,7 @@ export default function App({
 
   return (
      
-    <s>
-      <Component {...pageProps} />
-      <Analytics />
-    <s/>
+  
   
     <SessionProvider session={session}>
       <ThemeProvider attribute="class">
@@ -47,6 +44,10 @@ export default function App({
               showOnShallow={true}
             />
             <Component {...pageProps} />
+  
+      <Component {...pageProps} />
+      <Analytics />
+  
           </m.div>
         </AnimatePresence>
       </ThemeProvider>
