@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import { AnimatePresence, motion as m } from "framer-motion";
 import NextNProgress from "nextjs-progressbar";
 import { SessionProvider } from "next-auth/react";
+import { Analytics } from '@vercel/analytics/react';
 
 export default function App({
   Component,
@@ -12,6 +13,9 @@ export default function App({
   const router = useRouter();
 
   return (
+     
+      <Component {...pageProps} />
+      <Analytics />
     <SessionProvider session={session}>
       <ThemeProvider attribute="class">
         <AnimatePresence mode="wait">
@@ -46,3 +50,4 @@ export default function App({
     </SessionProvider>
   );
 }
+
