@@ -13,6 +13,7 @@
     "@apollo/client": "^3.7.3",
     "@heroicons/react": "^2.0.17",
     "@next/font": "13.0.7",
+    "@vercel/analytics": "^1.0.1"
     "@vercel/og": "^0.5.4",
     "artplayer": "^5.0.9",
     "artplayer-plugin-hls-quality": "^2.0.0",
