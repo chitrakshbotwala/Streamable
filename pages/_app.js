@@ -14,8 +14,10 @@ export default function App({
 
   return (
      
+    <s>
       <Component {...pageProps} />
       <Analytics />
+    <s/>
   
     <SessionProvider session={session}>
       <ThemeProvider attribute="class">
