@@ -43,10 +43,10 @@ export default function App({
               height={3}
               showOnShallow={true}
             />
+                     <Analytics />
             <Component {...pageProps} />
   
-      <Component {...pageProps} />
-      <Analytics />
+     
   
           </m.div>
         </AnimatePresence>
