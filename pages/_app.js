@@ -45,7 +45,7 @@ export default function App({
             />
                      <Analytics />
             <Component {...pageProps} />
-                  <Component {...pageProps} />
+                  
   
      
   
