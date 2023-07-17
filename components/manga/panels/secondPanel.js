@@ -125,7 +125,7 @@ export default function SecondPanel({
                   width={500}
                   height={500}
                   className="w-1/2 h-screen object-contain"
-                  src={`https://img.Streamable.live/image-proxy?url=${encodeURIComponent(
+                  src={`https://img.moopa.live/image-proxy?url=${encodeURIComponent(
                     image[image.length - index - 2]?.url
                   )}&headers=${encodeURIComponent(
                     JSON.stringify({
