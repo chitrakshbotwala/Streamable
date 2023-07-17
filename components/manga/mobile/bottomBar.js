@@ -99,7 +99,7 @@ export default function BottomBar({
                       onClick={() => setSeekPage(x.index)}
                     >
                       <Image
-                        src={`https://img.Streamable.live/image-proxy?url=${encodeURIComponent(
+                        src={`https://img.moopa.live/image-proxy?url=${encodeURIComponent(
                           x.url
                         )}&headers=${encodeURIComponent(
                           JSON.stringify({ Referer: x.headers.Referer })
