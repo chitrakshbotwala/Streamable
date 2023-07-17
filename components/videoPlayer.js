@@ -80,7 +80,7 @@ export default function VideoPlayer({
             // url: `${proxy}${items.url}`,
             url:
               provider === "gogoanime"
-                ? `https://cors.Streamable.my.id/?url=${encodeURIComponent(
+                ? `https://cors.moopa.my.id/?url=${encodeURIComponent(
                     items.url
                   )}${referer ? `&referer=${encodeURIComponent(referer)}` : ""}`
                 : `${proxy}${items.url}`,
