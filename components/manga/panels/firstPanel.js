@@ -124,7 +124,7 @@ export default function FirstPanel({
               ref={(el) => (imageRefs.current[index] = el)}
             >
               <Image
-                src={`https://img.Streamable.live/image-proxy?url=${encodeURIComponent(
+                src={`https://img.moopa.live/image-proxy?url=${encodeURIComponent(
                   i.url
                 )}&headers=${encodeURIComponent(
                   JSON.stringify({ Referer: i.headers.Referer })
