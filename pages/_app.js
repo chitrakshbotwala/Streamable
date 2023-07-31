@@ -1,10 +1,11 @@
-import { ThemeProvider } from "next-themes";
-import "../styles/globals.css";
 import { useRouter } from "next/router";
 import { AnimatePresence, motion as m } from "framer-motion";
 import NextNProgress from "nextjs-progressbar";
 import { SessionProvider } from "next-auth/react";
-import { Analytics } from '@vercel/analytics/react';
+import "../styles/globals.css";
+import "react-toastify/dist/ReactToastify.css";
+import "react-loading-skeleton/dist/skeleton.css";
+import { SkeletonTheme } from "react-loading-skeleton";
 
 export default function App({
   Component,
@@ -13,12 +14,9 @@ export default function App({
   const router = useRouter();
 
   return (
-     
-  
-  
     <SessionProvider session={session}>
-      <ThemeProvider attribute="class">
-        <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
+        <SkeletonTheme baseColor="#232329" highlightColor="#2a2a32">
           <m.div
             key={`route-${router.route}`}
             transition={{ duration: 0.5 }}
@@ -43,16 +41,10 @@ export default function App({
               height={3}
               showOnShallow={true}
             />
-                     <Analytics />
             <Component {...pageProps} />
-                  
-  
-     
-  
           </m.div>
-        </AnimatePresence>
-      </ThemeProvider>
+        </SkeletonTheme>
+      </AnimatePresence>
     </SessionProvider>
   );
 }
-
