@@ -16,6 +16,7 @@ export default function Info({
   watchId,
   provider,
   epiNumber,
+  dub,
   proxy,
   disqus,
 }) {
@@ -127,7 +128,7 @@ export default function Info({
       setInfo(data.data.Media);
 
       const response = await fetch(
-        `https://aka.Streamable.live/consumet/episode/${aniId}`
+        `/api/consumet/episode/${aniId}${dub ? `?dub=${dub}` : ""}`
       );
       const episodes = await response.json();
 
@@ -161,7 +162,7 @@ export default function Info({
       setLoading(false);
     }
     getInfo();
-  }, [sessions?.user?.name, epiNumber]);
+  }, [sessions?.user?.name, epiNumber, dub]);
 
   // console.log(proxy);
 
@@ -197,6 +198,7 @@ export default function Info({
             episode={episodesList}
             progress={progress}
             artStorage={artStorage}
+            dub={dub}
           />
         </div>
       </div>
@@ -223,6 +225,7 @@ export async function getServerSideProps(context) {
   const provider = query.info[1];
   const watchId = query.id;
   const epiNumber = query.num;
+  const dub = query.dub;
 
   return {
     props: {
@@ -231,6 +234,7 @@ export async function getServerSideProps(context) {
       provider: provider || null,
       watchId: watchId || null,
       epiNumber: epiNumber || null,
+      dub: dub || null,
       proxy,
       disqus,
     },
