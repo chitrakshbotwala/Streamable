@@ -20,6 +20,7 @@ module.exports = withPWA({
   },
   distDir: process.env.BUILD_DIR || ".next",
   trailingSlash: true,
+  output: "standalone",
   async headers() {
     return [
       {
@@ -29,7 +30,7 @@ module.exports = withPWA({
           { key: "Access-Control-Allow-Credentials", value: "true" },
           {
             key: "Access-Control-Allow-Origin",
-            value: "https://localhost:3000",
+            value: "https://streamableanime.me",
           }, // replace this your actual origin
           {
             key: "Access-Control-Allow-Methods",

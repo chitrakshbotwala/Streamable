@@ -15,9 +15,7 @@ export default function PrimarySide({
   info,
   session,
   epiNumber,
-  setLoading,
   navigation,
-  loading,
   providerId,
   watchId,
   status,
@@ -26,36 +24,48 @@ export default function PrimarySide({
   disqus,
   setOnList,
   episodeList,
+  timeWatched,
+  dub,
 }) {
   const [episodeData, setEpisodeData] = useState();
   const [open, setOpen] = useState(false);
   const [skip, setSkip] = useState();
 
+  const [loading, setLoading] = useState(true);
+
   const router = useRouter();
 
   useEffect(() => {
     setLoading(true);
-    setEpisodeData();
-    setSkip();
     async function fetchData() {
       if (info) {
-        const { data } = await axios.get(
-          `/api/consumet/source/${providerId}/${watchId}`
-        );
+        const anify = await fetch("/api/anify/source", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            providerId: providerId,
+            watchId: watchId,
+            episode: epiNumber,
+            id: info.id,
+            sub: dub ? "dub" : "sub",
+          }),
+        }).then((res) => res.json());
 
         const skip = await fetch(
           `https://api.aniskip.com/v2/skip-times/${info.idMal}/${parseInt(
             epiNumber
           )}?types[]=ed&types[]=mixed-ed&types[]=mixed-op&types[]=op&types[]=recap&episodeLength=`
-        ).then((r) => {
-          if (!r.ok) {
-            switch (r.status) {
+        ).then((res) => {
+          if (!res.ok) {
+            switch (res.status) {
               case 404: {
                 return null;
               }
             }
           }
-          return r.json();
+          return res.json();
         });
 
         const op =
@@ -65,14 +75,40 @@ export default function PrimarySide({
 
         setSkip({ op, ed });
 
-        setEpisodeData(data);
+        setEpisodeData(anify);
         setLoading(false);
       }
-      //   setMal(malId);
     }
 
     fetchData();
+    return () => {
+      setEpisodeData();
+      setSkip();
+    };
   }, [providerId, watchId, info]);
+
+  useEffect(() => {
+    const mediaSession = navigator.mediaSession;
+    if (!mediaSession) return;
+
+    const now = navigation?.playing;
+    const poster = now?.image || info?.bannerImage;
+    const title = now?.title || info?.title?.romaji;
+
+    const artwork = poster
+      ? [{ src: poster, sizes: "512x512", type: "image/jpeg" }]
+      : undefined;
+
+    mediaSession.metadata = new MediaMetadata({
+      title: title,
+      artist: `Streamable ${
+        title === info?.title?.romaji
+          ? "- Episode " + epiNumber
+          : `- ${info?.title?.romaji || info?.title?.english}`
+      }`,
+      artwork,
+    });
+  }, [navigation, info, epiNumber]);
 
   function handleOpen() {
     setOpen(true);
@@ -107,9 +143,10 @@ export default function PrimarySide({
       <div className="w-full h-full">
         <div key={watchId} className="w-full aspect-video bg-black">
           {!loading ? (
-            episodeData && (
+            navigation && episodeData?.sources?.length > 0 ? (
               <VideoPlayer
                 session={session}
+                info={info}
                 data={episodeData}
                 provider={providerId}
                 id={watchId}
@@ -118,10 +155,25 @@ export default function PrimarySide({
                 skip={skip}
                 proxy={proxy}
                 aniId={info.id}
+                aniTitle={info.title?.romaji || info.title?.english}
+                track={navigation}
+                timeWatched={timeWatched}
+                dub={dub}
               />
+            ) : (
+              <p className="aspect-video flex-center">
+                Video Source Not Found {`:(`}
+              </p>
             )
           ) : (
-            <div className="aspect-video bg-black" />
+            <div className="flex-center aspect-video bg-black">
+              <div className="lds-ellipsis">
+                <div></div>
+                <div></div>
+                <div></div>
+                <div></div>
+              </div>
+            </div>
           )}
         </div>
         <div className="flex flex-col divide-y divide-white/20">
@@ -132,13 +184,14 @@ export default function PrimarySide({
                   <Link
                     href={`/en/anime/${info.id}`}
                     className="hover:underline"
+                    title={navigation?.playing?.title || info.title?.romaji}
                   >
                     {navigation?.playing?.title || info.title?.romaji}
                   </Link>
                 </h1>
-                <h1 className="text-sm font-karla font-light">
+                <h3 className="text-sm font-karla font-light">
                   Episode {epiNumber}
-                </h1>
+                </h3>
               </div>
               <div className="flex gap-4 items-center justify-end">
                 <div className="relative">
@@ -150,7 +203,11 @@ export default function PrimarySide({
                         (episode) => episode.number === parseInt(e.target.value)
                       );
                       router.push(
-                        `/en/anime/watch/${info.id}/${providerId}?id=${selectedEpisode.id}&num=${selectedEpisode.number}`
+                        `/en/anime/watch/${info.id}/${providerId}?id=${
+                          selectedEpisode.id
+                        }&num=${selectedEpisode.number}${
+                          dub ? `&dub=${dub}` : ""
+                        }`
                       );
                     }}
                   >
@@ -169,7 +226,11 @@ export default function PrimarySide({
                   }relative group`}
                   onClick={() => {
                     router.push(
-                      `/en/anime/watch/${info.id}/${providerId}?id=${navigation?.next.id}&num=${navigation?.next.number}`
+                      `/en/anime/watch/${info.id}/${providerId}?id=${
+                        navigation?.next.id
+                      }&num=${navigation?.next.number}${
+                        dub ? `&dub=${dub}` : ""
+                      }`
                     );
                   }}
                 >
@@ -199,6 +260,7 @@ export default function PrimarySide({
           <Details
             info={info}
             session={session}
+            description={navigation?.playing?.description || info?.description}
             epiNumber={epiNumber}
             id={watchId}
             onList={onList}

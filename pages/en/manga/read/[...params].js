@@ -15,6 +15,7 @@ import Head from "next/head";
 import nookies from "nookies";
 import ShortCutModal from "../../../../components/manga/modals/shortcutModal";
 import ChapterModal from "../../../../components/manga/modals/chapterModal";
+import getAnifyPage from "../../../../lib/anify/page";
 
 export default function Read({ data, currentId, sessions }) {
   const [info, setInfo] = useState();
@@ -114,6 +115,13 @@ export default function Read({ data, currentId, sessions }) {
               }`
             : "Getting Info..."}
         </title>
+        <meta
+          name="title"
+          data-title-romaji={info?.title?.romaji}
+          data-title-english={info?.title?.english}
+          data-title-native={info?.title?.native}
+        />
+        <meta id="CoverImage" data-manga-cover={info?.coverImage} />
       </Head>
       <div className="w-screen flex justify-evenly relative">
         <ToastContainer pauseOnFocusLoss={false} />
@@ -228,6 +236,8 @@ export async function getServerSideProps(context) {
 
   const cookies = nookies.get(context);
 
+  const key = process.env.API_KEY;
+
   const query = context.query;
   const providerId = query.params[0];
   const chapterId = query.chapterId;
@@ -243,18 +253,12 @@ export async function getServerSideProps(context) {
 
   const session = await getServerSession(context.req, context.res, authOptions);
 
-  const key = process.env.API_KEY;
-  const res = await fetch(
-    `https://api.anify.tv/pages?providerId=${providerId}&readId=${encodeURIComponent(
-      chapterId
-    )}&apikey=${key}`
-  );
+  const data = await getAnifyPage(mediaId, providerId, chapterId, key);
 
-  const data = await res.json();
   if (data.error) {
     return {
-      notFound: true
-    }
+      notFound: true,
+    };
   }
 
   return {

@@ -1,5 +1,5 @@
 import { aniListData } from "../../lib/anilist/AniList";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Fragment } from "react";
 import Head from "next/head";
 import Link from "next/link";
 import Footer from "../../components/footer";
@@ -9,7 +9,6 @@ import Content from "../../components/home/content";
 import { motion } from "framer-motion";
 
 import { signOut } from "next-auth/react";
-import { useAniList } from "../../lib/anilist/useAnilist";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../api/auth/[...nextauth]";
 import SearchBar from "../../components/searchBar";
@@ -21,17 +20,45 @@ import { useCountdown } from "../../utils/useCountdownSeconds";
 import Navigasi from "../../components/home/staticNav";
 import MobileNav from "../../components/home/mobileNav";
 import axios from "axios";
+import { createUser } from "../../prisma/user";
 
-// Filter schedules for each day
-// const filterByCountryOfOrigin = (schedule, country) => {
-//   const filteredSchedule = {};
-//   for (const day in schedule) {
-//     filteredSchedule[day] = schedule[day].filter(
-//       (anime) => anime.countryOfOrigin === country
-//     );
-//   }
-//   return filteredSchedule;
-// };
+import { checkAdBlock } from "adblock-checker";
+import { ToastContainer, toast } from "react-toastify";
+import { useAniList } from "../../lib/anilist/useAnilist";
+
+export async function getServerSideProps(context) {
+  const session = await getServerSession(context.req, context.res, authOptions);
+
+  try {
+    if (session) {
+      await createUser(session.user.name);
+    }
+  } catch (error) {
+    console.error(error);
+  }
+
+  const trendingDetail = await aniListData({
+    sort: "TRENDING_DESC",
+    page: 1,
+  });
+  const popularDetail = await aniListData({
+    sort: "POPULARITY_DESC",
+    page: 1,
+  });
+  const genreDetail = await aniListData({ sort: "TYPE", page: 1 });
+
+  const upComing = await getUpcomingAnime();
+
+  return {
+    props: {
+      genre: genreDetail.props,
+      detail: trendingDetail.props,
+      populars: popularDetail.props,
+      sessions: session,
+      upComing,
+    },
+  };
+}
 
 export default function Home({ detail, populars, sessions, upComing }) {
   const { media: current } = useAniList(sessions, { stats: "CURRENT" });
@@ -41,6 +68,27 @@ export default function Home({ detail, populars, sessions, upComing }) {
   const [schedules, setSchedules] = useState(null);
 
   const [anime, setAnime] = useState([]);
+
+  useEffect(() => {
+    async function adBlock() {
+      const ad = await checkAdBlock();
+      if (ad) {
+        toast.dark(
+          "Please disable your adblock for better experience, we don't have any ads on our site.",
+          {
+            position: "top-center",
+            autoClose: false,
+            hideProgressBar: true,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            theme: "dark",
+          }
+        );
+      }
+    }
+    adBlock();
+  }, []);
 
   const update = () => {
     setAnime((prevAnime) => prevAnime.slice(1));
@@ -59,8 +107,14 @@ export default function Home({ detail, populars, sessions, upComing }) {
 
   useEffect(() => {
     const getSchedule = async () => {
-      const { data } = await axios.get(`/api/anify/schedule`);
-      setSchedules(data);
+      const res = await fetch(`/api/anify/schedule`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSchedules(null);
+      } else {
+        setSchedules(data);
+      }
     };
     getSchedule();
   }, []);
@@ -71,12 +125,16 @@ export default function Home({ detail, populars, sessions, upComing }) {
     function getRelease() {
       let releasingAnime = [];
       let progress = [];
+      let seenIds = new Set(); // Create a Set to store the IDs of seen anime
       release.map((list) => {
         list.entries.map((entry) => {
-          if (entry.media.status === "RELEASING") {
+          if (
+            entry.media.status === "RELEASING" &&
+            !seenIds.has(entry.media.id)
+          ) {
             releasingAnime.push(entry.media);
+            seenIds.add(entry.media.id); // Add the ID to the Set
           }
-
           progress.push(entry);
         });
       });
@@ -89,11 +147,85 @@ export default function Home({ detail, populars, sessions, upComing }) {
   const [list, setList] = useState(null);
   const [planned, setPlanned] = useState(null);
   const [greeting, setGreeting] = useState("");
+  const [user, setUser] = useState(null);
+  const [removed, setRemoved] = useState();
 
   const [prog, setProg] = useState(null);
 
   const popular = populars?.data;
   const data = detail.data[0];
+
+  useEffect(() => {
+    async function userData() {
+      let data;
+      try {
+        if (sessions?.user?.name) {
+          const res = await fetch(
+            `/api/user/profile?name=${sessions.user.name}`
+          );
+          if (!res.ok) {
+            switch (res.status) {
+              case 404: {
+                console.log("user not found");
+                break;
+              }
+              case 500: {
+                console.log("server error");
+                break;
+              }
+              default: {
+                console.log("unknown error");
+                break;
+              }
+            }
+          } else {
+            data = await res.json();
+            // Do something with the data
+          }
+        }
+      } catch (error) {
+        console.error(error);
+        // Handle the error here
+      }
+      if (!data) {
+        const dat = JSON.parse(localStorage.getItem("artplayer_settings"));
+        if (dat) {
+          const arr = Object.keys(dat).map((key) => dat[key]);
+          const newFirst = arr?.sort((a, b) => {
+            return new Date(b?.createdAt) - new Date(a?.createdAt);
+          });
+
+          const uniqueTitles = new Set();
+
+          // Filter out duplicates and store unique entries
+          const filteredData = newFirst.filter((entry) => {
+            if (uniqueTitles.has(entry.aniTitle)) {
+              return false;
+            }
+            uniqueTitles.add(entry.aniTitle);
+            return true;
+          });
+
+          setUser(filteredData);
+        }
+      } else {
+        // Create a Set to store unique aniTitles
+        const uniqueTitles = new Set();
+
+        // Filter out duplicates and store unique entries
+        const filteredData = data?.WatchListEpisode.filter((entry) => {
+          if (uniqueTitles.has(entry.aniTitle)) {
+            return false;
+          }
+          uniqueTitles.add(entry.aniTitle);
+          return true;
+        });
+        setUser(filteredData);
+      }
+      // const data = await res.json();
+    }
+    userData();
+  }, [sessions?.user?.name, removed]);
 
   useEffect(() => {
     const time = new Date().getHours();
@@ -112,7 +244,8 @@ export default function Home({ detail, populars, sessions, upComing }) {
     setGreeting(greeting);
 
     async function userData() {
-      if (!sessions) return;
+      if (!sessions?.user?.name) return;
+
       const getMedia =
         current.filter((item) => item.status === "CURRENT")[0] || null;
       const list = getMedia?.entries
@@ -131,13 +264,19 @@ export default function Home({ detail, populars, sessions, upComing }) {
       }
     }
     userData();
-  }, [sessions, current, plan]);
+  }, [sessions?.user?.name, current, plan]);
+
   return (
-    <>
+    <Fragment>
       <Head>
         <title>Streamable</title>
         <meta charSet="UTF-8"></meta>
         <meta name="twitter:card" content="summary_large_image" />
+        <meta name="title" content="Streamable" />
+        <meta
+          name="description"
+          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
+        />
         <meta
           name="twitter:title"
           content="Streamable - Free Anime and Manga Streaming"
@@ -148,8 +287,9 @@ export default function Home({ detail, populars, sessions, upComing }) {
         />
         <meta
           name="twitter:image"
-          content="https://cdn.discordapp.com/attachments/1084446049986420786/1093300833422168094/image.png"
+          content="https://beta.Streamable.live/preview.png"
         />
+
         <link rel="icon" href="/c.svg" />
       </Head>
 
@@ -158,6 +298,13 @@ export default function Home({ detail, populars, sessions, upComing }) {
       <div className="h-auto w-screen bg-[#141519] text-[#dbdcdd] ">
         <Navigasi />
         <SearchBar />
+        <ToastContainer
+          pauseOnHover={false}
+          style={{
+            width: "400px",
+          }}
+        />
+
         {/* PC / TABLET */}
         <div className=" hidden justify-center lg:flex my-16">
           <div className="relative grid grid-rows-2 items-center lg:flex lg:h-[467px] lg:w-[80%] lg:justify-between">
@@ -228,6 +375,24 @@ export default function Home({ detail, populars, sessions, upComing }) {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, staggerChildren: 0.2 }} // Add staggerChildren prop
           >
+            {user?.length > 0 && (
+              <motion.div // Add motion.div to each child component
+                key="recentlyWatched"
+                initial={{ y: 20, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <Content
+                  ids="recentlyWatched"
+                  section="Recently Watched"
+                  userData={user}
+                  userName={sessions?.user?.name}
+                  setRemoved={setRemoved}
+                />
+              </motion.div>
+            )}
+
             {sessions && releaseData?.length > 0 && (
               <motion.div // Add motion.div to each child component
                 key="onGoing"
@@ -351,32 +516,6 @@ export default function Home({ detail, populars, sessions, upComing }) {
         </div>
       </div>
       <Footer />
-    </>
+    </Fragment>
   );
-}
-
-export async function getServerSideProps(context) {
-  const session = await getServerSession(context.req, context.res, authOptions);
-
-  const trendingDetail = await aniListData({
-    sort: "TRENDING_DESC",
-    page: 1,
-  });
-  const popularDetail = await aniListData({
-    sort: "POPULARITY_DESC",
-    page: 1,
-  });
-  const genreDetail = await aniListData({ sort: "TYPE", page: 1 });
-
-  const upComing = await getUpcomingAnime();
-
-  return {
-    props: {
-      genre: genreDetail.props,
-      detail: trendingDetail.props,
-      populars: popularDetail.props,
-      sessions: session,
-      upComing,
-    },
-  };
 }
