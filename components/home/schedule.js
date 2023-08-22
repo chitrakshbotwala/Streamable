@@ -37,6 +37,8 @@ export default function Schedule({ data, scheduleData, time }) {
     setCurrentPage(todayIndex >= 0 ? todayIndex : 0);
   }, [currentDay, days]);
 
+  // console.log({ scheduleData });
+
   return (
     <div className="flex flex-col gap-5 px-4 lg:px-0">
       <h1 className="font-bold font-karla text-[20px] lg:px-5">
@@ -115,10 +117,10 @@ export default function Schedule({ data, scheduleData, time }) {
             >
               <div className="flex flex-col gap-2 px-2 pt-2">
                 {scheduleData[days[currentPage]]
-                  .filter((show, index, self) => {
+                  ?.filter((show, index, self) => {
                     return index === self.findIndex((s) => s.id === show.id);
                   })
-                  .map((i, index) => {
+                  ?.map((i, index) => {
                     const currentTime = Date.now();
                     const hasAired = i.airingAt < currentTime;
 

@@ -3,13 +3,14 @@ import Link from "next/link";
 
 export default function ThumbnailOnly({
   info,
+  image,
   providerId,
   episode,
   artStorage,
   progress,
   dub,
 }) {
-  const time = artStorage?.[episode?.id]?.time;
+  const time = artStorage?.[episode?.id]?.timeWatched;
   const duration = artStorage?.[episode?.id]?.duration;
   let prog = (time / duration) * 100;
   if (prog > 90) prog = 100;
@@ -25,7 +26,7 @@ export default function ThumbnailOnly({
         Episode {episode?.number}
       </span>
       <span
-        className={`absolute bottom-7 left-0 h-1 bg-red-600`}
+        className={`absolute bottom-7 left-0 h-[2px] bg-red-600`}
         style={{
           width:
             progress && artStorage && episode?.number <= progress
@@ -36,24 +37,15 @@ export default function ThumbnailOnly({
         }}
       />
       <div className="absolute inset-0 bg-black z-30 opacity-20" />
-      <Image
-        // src={
-        //   providerId === "animepahe"
-        //     ? `https://img.moopa.live/image-proxy?url=${encodeURIComponent(
-        //         episode.img
-        //       )}&headers=${encodeURIComponent(
-        //         JSON.stringify({ Referer: "https://animepahe.com/" })
-        //       )}`
-        //     : thumbnail?.img.includes("null")
-        //     ? info.coverImage.large
-        //     : thumbnail?.img || info.coverImage.large
-        // }
-        src={episode?.image}
-        alt="epi image"
-        width={500}
-        height={500}
-        className="object-cover w-full h-[150px] sm:h-[100px] z-20"
-      />
+      {image && (
+        <Image
+          src={image || ""}
+          alt="epi image"
+          width={500}
+          height={500}
+          className="object-cover w-full h-[150px] sm:h-[100px] z-20"
+        />
+      )}
     </Link>
   );
 }

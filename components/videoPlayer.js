@@ -2,6 +2,7 @@ import Player from "../lib/Artplayer";
 import { useEffect, useState } from "react";
 import { useAniList } from "../lib/anilist/useAnilist";
 import artplayerPluginHlsQuality from "artplayer-plugin-hls-quality";
+import { useRouter } from "next/router";
 
 const fontSize = [
   {
@@ -19,6 +20,7 @@ const fontSize = [
 ];
 
 export default function VideoPlayer({
+  info,
   data,
   id,
   progress,
@@ -30,16 +32,24 @@ export default function VideoPlayer({
   poster,
   proxy,
   provider,
+  track,
+  aniTitle,
+  timeWatched,
+  dub,
 }) {
   const [url, setUrl] = useState("");
   const [source, setSource] = useState([]);
   const { markProgress } = useAniList(session);
+
+  const router = useRouter();
 
   const [resolution, setResolution] = useState("auto");
   const [subSize, setSubSize] = useState({ size: "16px", html: "Small" });
   const [defSize, setDefSize] = useState();
   const [subtitle, setSubtitle] = useState();
   const [defSub, setDefSub] = useState();
+
+  const [autoPlay, setAutoPlay] = useState(false);
 
   useEffect(() => {
     const resol = localStorage.getItem("quality");
@@ -76,12 +86,9 @@ export default function VideoPlayer({
           return {
             ...(isDefault && { default: true }),
             html: items.quality === "default" ? "adaptive" : items.quality,
-            url:
-              provider === "gogoanime"
-                ? `https://cors.moopa.workers.dev/?url=${encodeURIComponent(
-                    items.url
-                  )}${referer ? `&referer=${encodeURIComponent(referer)}` : ""}`
-                : `${proxy}${items.url}`,
+            url: `${proxy}?url=${encodeURIComponent(items.url)}${
+              referer ? `&referer=${encodeURIComponent(referer)}` : ""
+            }${referer ? `&origin=${encodeURIComponent(referer)}` : ""}`,
           };
         });
 
@@ -126,7 +133,7 @@ export default function VideoPlayer({
           option={{
             url: `${url}`,
             title: `${title}`,
-            autoplay: true,
+            autoplay: false,
             screenshot: true,
             moreVideoAttr: {
               crossOrigin: "anonymous",
@@ -135,9 +142,6 @@ export default function VideoPlayer({
             ...(provider !== "gogoanime" && {
               plugins: [
                 artplayerPluginHlsQuality({
-                  // Show quality in control
-                  // control: true,
-
                   // Show quality in setting
                   setting: true,
 
@@ -171,11 +175,15 @@ export default function VideoPlayer({
               },
             }),
           }}
+          id={aniId}
           res={resolution}
           quality={source}
           subSize={subSize}
           subtitles={subtitle}
           provider={provider}
+          track={track}
+          autoplay={autoPlay}
+          setautoplay={setAutoPlay}
           style={{
             width: "100%",
             height: "100%",
@@ -183,52 +191,165 @@ export default function VideoPlayer({
           }}
           getInstance={(art) => {
             art.on("ready", () => {
-              // console.log(art.storage.settings);
               const seek = art.storage.get(id);
-              const seekTime = seek?.time || 0;
+              const seekTime = seek?.timeWatched || 0;
               const duration = art.duration;
               const percentage = seekTime / duration;
+              const percentagedb = timeWatched / duration;
 
               if (subSize) {
                 art.subtitle.style.fontSize = subSize?.size;
               }
 
-              if (percentage >= 0.9) {
+              if (percentage >= 0.9 || percentagedb >= 0.9) {
                 art.currentTime = 0;
                 console.log("Video started from the beginning");
+              } else if (timeWatched) {
+                art.currentTime = timeWatched;
               } else {
                 art.currentTime = seekTime;
               }
             });
 
-            art.on("video:timeupdate", () => {
+            let marked = 0;
+
+            art.on("video:playing", () => {
               if (!session) return;
-              const mediaSession = navigator.mediaSession;
-              const currentTime = art.currentTime;
+              const intervalId = setInterval(async () => {
+                const resp = await fetch("/api/user/update/episode", {
+                  method: "PUT",
+                  body: JSON.stringify({
+                    name: session?.user?.name,
+                    id: String(aniId),
+                    watchId: id,
+                    title: track.playing?.title || aniTitle,
+                    aniTitle: aniTitle,
+                    image: track.playing?.image || info?.coverImage?.extraLarge,
+                    number: Number(progress),
+                    duration: art.duration,
+                    timeWatched: art.currentTime,
+                    provider: provider,
+                    nextId: track.next?.id,
+                    nextNumber: Number(track.next?.number),
+                    dub: dub ? true : false,
+                  }),
+                });
+                // console.log("updating db", { track });
+              }, 5000);
+
+              art.on("video:pause", () => {
+                clearInterval(intervalId);
+              });
+
+              art.on("video:ended", () => {
+                clearInterval(intervalId);
+              });
+
+              art.on("destroy", () => {
+                clearInterval(intervalId);
+                // console.log("clearing interval");
+              });
+            });
+
+            art.on("video:playing", () => {
+              const interval = setInterval(async () => {
+                art.storage.set(id, {
+                  aniId: String(aniId),
+                  watchId: id,
+                  title: track?.playing?.title || aniTitle,
+                  aniTitle: aniTitle,
+                  image: track?.playing?.image || info?.coverImage?.extraLarge,
+                  episode: Number(progress),
+                  duration: art.duration,
+                  timeWatched: art.currentTime,
+                  provider: provider,
+                  nextId: track?.next?.id,
+                  nextNumber: track?.next?.number,
+                  dub: dub ? true : false,
+                  createdAt: new Date().toISOString(),
+                });
+              }, 5000);
+
+              art.on("video:pause", () => {
+                clearInterval(interval);
+              });
+
+              art.on("video:ended", () => {
+                clearInterval(interval);
+              });
+
+              art.on("destroy", () => {
+                clearInterval(interval);
+              });
+            });
+
+            art.on("resize", () => {
+              art.subtitle.style({
+                fontSize: art.height * 0.05 + "px",
+              });
+            });
+
+            art.on("video:timeupdate", async () => {
+              if (!session) return;
+
+              var currentTime = art.currentTime;
               const duration = art.duration;
               const percentage = currentTime / duration;
 
-              mediaSession.setPositionState({
-                duration: art.duration,
-                playbackRate: art.playbackRate,
-                position: art.currentTime,
-              });
-
               if (percentage >= 0.9) {
                 // use >= instead of >
-                markProgress(aniId, progress, stats);
-                art.off("video:timeupdate");
-                console.log("Video progress marked");
+                if (marked < 1) {
+                  marked = 1;
+                  markProgress(aniId, progress, stats);
+                }
+              }
+            });
+
+            art.on("video:ended", () => {
+              if (!track?.next) return;
+              if (localStorage.getItem("autoplay") === "true") {
+                art.controls.add({
+                  name: "next-button",
+                  position: "top",
+                  html: '<div class="vid-con"><button class="next-button progress">Play Next</button></div>',
+                  click: function (...args) {
+                    if (track?.next) {
+                      router.push(
+                        `/en/anime/watch/${aniId}/${provider}?id=${encodeURIComponent(
+                          track?.next?.id
+                        )}&num=${track?.next?.number}${
+                          dub ? `&dub=${dub}` : ""
+                        }`
+                      );
+                    }
+                  },
+                });
+
+                const button = document.querySelector(".next-button");
+
+                function stopTimeout() {
+                  clearTimeout(timeoutId);
+                  button.classList.remove("progress");
+                }
+
+                let timeoutId = setTimeout(() => {
+                  art.controls.remove("next-button");
+                  if (track?.next) {
+                    router.push(
+                      `/en/anime/watch/${aniId}/${provider}?id=${encodeURIComponent(
+                        track?.next?.id
+                      )}&num=${track?.next?.number}${dub ? `&dub=${dub}` : ""}`
+                    );
+                  }
+                }, 7000);
+
+                button.addEventListener("mouseover", stopTimeout);
               }
             });
 
             art.on("video:timeupdate", () => {
               var currentTime = art.currentTime;
               // console.log(art.currentTime);
-              art.storage.set(id, {
-                time: art.currentTime,
-                duration: art.duration,
-              });
 
               if (
                 skip?.op &&

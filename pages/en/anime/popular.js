@@ -1,13 +1,13 @@
 import { ChevronLeftIcon } from "@heroicons/react/24/solid";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton";
-import Navbar from "../../../components/navbar";
 import Footer from "../../../components/footer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]";
 import MobileNav from "../../../components/home/mobileNav";
+import Head from "next/head";
 
 export default function PopularAnime({ sessions }) {
   const [data, setData] = useState(null);
@@ -95,10 +95,18 @@ export default function PopularAnime({ sessions }) {
   }, [page, nextPage]);
 
   return (
-    <>
+    <Fragment>
+      <Head>
+        <title>Streamable - Popular Anime</title>
+        <meta name="title" content="Popular Anime" />
+        <meta
+          name="description"
+          content="Explore Beloved Classics and Favorites - Dive into a curated collection of timeless anime on Streamable's Popular Anime Page. From iconic classics to all-time favorites, experience the stories that have captured hearts worldwide. Start streaming now and relive the magic of anime!"
+        />
+      </Head>
       <MobileNav sessions={sessions} />
-      <div className="flex flex-col gap-2 items-center min-h-screen w-screen px-2 relative pb-10">
-        <div className="z-50 bg-primary pt-5 pb-3 shadow-md shadow-primary w-full fixed left-3">
+      <main className="flex flex-col gap-2 items-center min-h-screen w-screen px-2 relative pb-10">
+        <div className="z-50 bg-primary pt-5 pb-3 shadow-md shadow-primary w-full fixed px-3">
           <Link href="/en" className="flex gap-2 items-center font-karla">
             <ChevronLeftIcon className="w-5 h-5" />
             <h1 className="text-xl">Popular Anime</h1>
@@ -110,7 +118,11 @@ export default function PopularAnime({ sessions }) {
               key={index}
               className="flex flex-col items-center w-[150px] lg:w-[180px]"
             >
-              <Link href={`/en/anime/${i.id}`} className="p-2">
+              <Link
+                href={`/en/anime/${i.id}`}
+                className="p-2"
+                title={i.title.romaji}
+              >
                 <Image
                   src={i.coverImage.large}
                   alt={i.title.romaji}
@@ -119,7 +131,11 @@ export default function PopularAnime({ sessions }) {
                   className="w-[140px] h-[190px] lg:w-[170px] lg:h-[230px] object-cover rounded hover:scale-105 scale-100 transition-all duration-200 ease-out"
                 />
               </Link>
-              <Link href={`/en/anime/${i.id}`} className="w-full px-2">
+              <Link
+                href={`/en/anime/${i.id}`}
+                className="w-full px-2"
+                title={i.title.romaji}
+              >
                 <h1 className="font-karla font-bold xl:text-base text-[15px] line-clamp-2">
                   {i.status === "RELEASING" ? (
                     <span className="dots bg-green-500" />
@@ -158,9 +174,9 @@ export default function PopularAnime({ sessions }) {
             Load More
           </button>
         )}
-      </div>
+      </main>
       <Footer />
-    </>
+    </Fragment>
   );
 }
 

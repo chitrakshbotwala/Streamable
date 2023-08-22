@@ -109,6 +109,14 @@ export default function Info({ info, color }) {
             ? info?.title?.romaji || info?.title?.english
             : "Retrieving Data..."}
         </title>
+        <meta
+          name="title"
+          content={info?.title?.romaji}
+          data-title-romaji={info?.title?.romaji}
+          data-title-english={info?.title?.english}
+          data-title-native={info?.title?.native}
+        />
+        <meta name="description" content={info.description} />
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
@@ -125,14 +133,14 @@ export default function Info({ info, color }) {
           }&image=${info.bannerImage || info.coverImage.extraLarge}`}
         />
       </Head>
-      <ToastContainer pauseOnFocusLoss={false} />
+      <ToastContainer pauseOnHover={false} />
       <Modal open={open} onClose={() => handleClose()}>
         <div>
           {!session && (
             <div className="flex-center flex-col gap-5 px-10 py-5 bg-secondary rounded-md">
-              <h1 className="text-md font-extrabold font-karla">
+              <div className="text-md font-extrabold font-karla">
                 Edit your list
-              </h1>
+              </div>
               <button
                 className="flex items-center bg-[#363642] rounded-md text-white p-1"
                 onClick={() => signIn("AniListProvider")}
@@ -154,6 +162,7 @@ export default function Info({ info, color }) {
               prg={progress}
               max={info?.episodes}
               image={info}
+              close={handleClose}
             />
           )}
         </div>
@@ -164,18 +173,16 @@ export default function Info({ info, color }) {
             <div className="bg-gradient-to-t from-primary from-10% to-transparent absolute h-[300px] w-screen z-10 inset-0" />
             {info ? (
               <>
-                <Image
-                  src={
-                    info?.bannerImage ||
-                    info?.coverImage?.extraLarge ||
-                    info?.coverImage.large
-                  }
-                  priority={true}
-                  alt="banner anime"
-                  height={1000}
-                  width={1000}
-                  className="hidden md:block object-cover bg-image w-screen absolute top-0 left-0 h-[300px] brightness-[70%] z-0"
-                />
+                {info?.bannerImage && (
+                  <Image
+                    src={info?.bannerImage}
+                    priority={true}
+                    alt="banner anime"
+                    height={1000}
+                    width={1000}
+                    className="hidden md:block object-cover bg-image w-screen absolute top-0 left-0 h-[300px] brightness-[70%] z-0"
+                  />
+                )}
                 <Image
                   src={info?.coverImage.extraLarge || info?.coverImage.large}
                   priority={true}

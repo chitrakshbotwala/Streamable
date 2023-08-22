@@ -1,4 +1,3 @@
-import axios from "axios";
 import cacheData from "memory-cache";
 
 const API_URL = process.env.API_URI;
@@ -7,12 +6,18 @@ export default async function handler(req, res) {
   try {
     const id = req.query.id;
     const dub = req.query.dub || false;
+    const refresh = req.query.refresh || false;
 
-    const providers = ["enime", "gogoanime"];
+    const providers = ["gogoanime"];
     const datas = [];
 
     const cached = cacheData.get(id + dub);
-    if (cached) {
+
+    if (refresh) {
+      cacheData.del(id + dub);
+    }
+
+    if (!refresh && cached) {
       return res.status(200).json(cached);
     } else {
       async function fetchData(provider) {
@@ -53,7 +58,7 @@ export default async function handler(req, res) {
       if (datas.length === 0) {
         return res.status(404).json({ message: "Anime not found" });
       } else {
-        cacheData.put(id + dub, { data: datas }, 1000 * 60 * 60 * 15); // 15 minutes
+        cacheData.put(id + dub, { data: datas }, 1000 * 60 * 60 * 10);
         res.status(200).json({ data: datas });
       }
     }
