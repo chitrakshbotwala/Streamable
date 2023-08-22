@@ -30,7 +30,7 @@ module.exports = withPWA({
           { key: "Access-Control-Allow-Credentials", value: "true" },
           {
             key: "Access-Control-Allow-Origin",
-            value: "https://streamableanime.me",
+            value: "https://moopa.live",
           }, // replace this your actual origin
           {
             key: "Access-Control-Allow-Methods",
