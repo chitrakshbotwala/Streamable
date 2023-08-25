@@ -7,7 +7,7 @@ const API_KEY = process.env.API_KEY;
 export async function fetchInfo(id) {
   try {
     const { data } = await axios.get(
-      `https://api.consumet.org/episodes/${id}?apikey=${API_KEY}`
+      `https://api.anify.tv/episodes/${id}?apikey=${API_KEY}`
     );
     return data;
   } catch (error) {

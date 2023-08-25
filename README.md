@@ -1,23 +1,23 @@
 <div align="center">
-<a href="https://Streamable.live">
+<a href="https://moopa.live">
   <img src="https://user-images.githubusercontent.com/97084324/234460363-216b29d3-acba-4c29-a321-780de84c9ab0.png" alt="logo" width="180"/>
 </a>
 </div>
 
 <h1 align="center">
-  <a href="https://Streamable.live">Streamable Anime Streaming Website</a>
+  <a href="https://moopa.live">Moopa Anime Streaming Website</a>
 </h1>
 
 <p align="center">
 
- <a href="https://github.com/DevanAbinaya/Ani-Streamable/blob/main/LICENSE.md">
-    <img src="https://img.shields.io/github/license/DevanAbinaya/Ani-Streamable" alt="license"/>
+ <a href="https://github.com/DevanAbinaya/Ani-Moopa/blob/main/LICENSE.md">
+    <img src="https://img.shields.io/github/license/DevanAbinaya/Ani-Moopa" alt="license"/>
   </a>
-  <a href="https://github.com/DevanAbinaya/Ani-Streamable/fork">
-    <img src="https://img.shields.io/github/forks/DevanAbinaya/Ani-Streamable?style=social" alt="fork"/>
+  <a href="https://github.com/DevanAbinaya/Ani-Moopa/fork">
+    <img src="https://img.shields.io/github/forks/DevanAbinaya/Ani-Moopa?style=social" alt="fork"/>
   </a>
-  <a href="https://github.com/DevanAbinaya/Ani-Streamable">
-    <img src="https://img.shields.io/github/stars/DevanAbinaya/Ani-Streamable?style=social" alt="stars"/>
+  <a href="https://github.com/DevanAbinaya/Ani-Moopa">
+    <img src="https://img.shields.io/github/stars/DevanAbinaya/Ani-Moopa?style=social" alt="stars"/>
   </a>
   
 </p>
@@ -41,16 +41,16 @@
 </p>
 
 <h3 align="center">Watch Page</h3>
-<img src="https://github.com/Ani-Streamable/Streamable/assets/97084324/c654aa13-76d7-47fe-ac02-924fbbb40f76"/>
+<img src="https://github.com/Ani-Moopa/Moopa/assets/97084324/c654aa13-76d7-47fe-ac02-924fbbb40f76"/>
  
 <h3 align="center">Manga Reader</h3>
-<img src="https://github.com/DevanAbinaya/Ani-Streamable/assets/97084324/ccd2ee11-4ee3-411c-b634-d48c84f1a9e2"/>
+<img src="https://github.com/DevanAbinaya/Ani-Moopa/assets/97084324/ccd2ee11-4ee3-411c-b634-d48c84f1a9e2"/>
 
 </details>
 
 ## Introduction
 
-<p><a href="https://Streamable.live">Streamable</a> is an anime streaming website made possible by <a href="https://github.com/consumet">Consumet API</a> build with <a href="https://github.com/vercel/next.js/">NextJs</a> and <a href="https://github.com/tailwindlabs/tailwindcss">Tailwind</a> with a sleek and modern design that offers Anilist integration to help you keep track of your favorite anime series. Streamable is entirely free and does not feature any ads, making it a great option for you who want an uninterrupted viewing experience.</p>
+<p><a href="https://moopa.live">Moopa</a> is an anime streaming website made possible by <a href="https://github.com/consumet">Consumet API</a> build with <a href="https://github.com/vercel/next.js/">NextJs</a> and <a href="https://github.com/tailwindlabs/tailwindcss">Tailwind</a> with a sleek and modern design that offers Anilist integration to help you keep track of your favorite anime series. Moopa is entirely free and does not feature any ads, making it a great option for you who want an uninterrupted viewing experience.</p>
 
 ## Features
 
@@ -76,14 +76,14 @@
 
 ## Bug Report
 
-If you encounter any issues or bug on the site please head to [issues](https://github.com/DevanAbinaya/Ani-Streamable/issues) and create a bug report there.
+If you encounter any issues or bug on the site please head to [issues](https://github.com/DevanAbinaya/Ani-Moopa/issues) and create a bug report there.
 
 ## For Local Development
 
 1. Clone this repository using :
 
 ```bash
-git clone https://github.com/DevanAbinaya/Ani-Streamable.git
+git clone https://github.com/DevanAbinaya/Ani-Moopa.git
 ```
 
 2. Install package using npm :
@@ -152,7 +152,7 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md
 
 Thank You for passing by!!
 
-If you have any questions or feedback, please reach out to us at [contact@Streamable.live](mailto:contact@Streamable.live?subject=[Streamable]%20-%20Your%20Subject), or you can join our [discord sever](https://discord.gg/4xTGhr85BG).
+If you have any questions or feedback, please reach out to us at [contact@moopa.live](mailto:contact@moopa.live?subject=[Moopa]%20-%20Your%20Subject), or you can join our [discord sever](https://discord.gg/4xTGhr85BG).
 <br>
 or you can DM me on Discord `Chitraksh Maheshwari#9110`/`CritenDust#3704`. (just contact me on one of these account)
 
@@ -160,7 +160,7 @@ or you can DM me on Discord `Chitraksh Maheshwari#9110`/`CritenDust#3704`. (just
 
 ## Support This Project
 
-✨ [Star this project](https://github.com/DevanAbinaya/Ani-Streamable)
+✨ [Star this project](https://github.com/DevanAbinaya/Ani-Moopa)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E6F9XZ3)  
 <a href="https://trakteer.id/Chitraksh Maheshwari" target="_blank"><img id="wse-buttons-preview" src="https://cdn.trakteer.id/images/embed/trbtn-red-5.png" height="36" style="border: 0px; height: 36px;" alt="Trakteer Saya"></a>
