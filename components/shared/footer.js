@@ -110,7 +110,7 @@ function Footer() {
         <div className="mx-auto flex w-[90%] lg:w-[95%] xl:w-[80%] flex-col pb-6 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:py-0">
           <p className="flex items-center gap-1 font-karla lg:text-[0.81rem] text-[0.7rem] text-[#CCCCCC] py-3">
             &copy; {new Date().getFullYear()} streamable.live | Website Made by{" "}
-            <span className="text-white font-bold">Factiven</span>
+            <span className="text-white font-bold">Chitraksh Maheshwari</span>
           </p>
           <div className="flex items-center gap-5">
             {/* Github Icon */}

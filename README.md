@@ -159,7 +159,7 @@ Thank You for passing by!!
 
 If you have any questions or feedback, please reach out to us at [contact@moopa.live](mailto:contact@moopa.live?subject=[Moopa]%20-%20Your%20Subject), or you can join our [discord sever](https://discord.gg/4xTGhr85BG).
 <br>
-or you can DM me on Discord `Factiven#9110`.
+or you can DM me on Discord `Chitraksh Maheshwari#9110`.
 
 [![Discord Banner](https://discordapp.com/api/guilds/822413263148285973/widget.png?style=banner2)](https://discord.gg/v5fjSdKwr2)
 
@@ -168,4 +168,4 @@ or you can DM me on Discord `Factiven#9110`.
 ✨ [Star this project](https://github.com/DevanAbinaya/Ani-Moopa)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/E1E6F9XZ3)  
-<a href="https://trakteer.id/factiven" target="_blank"><img id="wse-buttons-preview" src="https://cdn.trakteer.id/images/embed/trbtn-red-5.png" height="36" style="border: 0px; height: 36px;" alt="Trakteer Saya"></a>
+<a href="https://trakteer.id/Chitraksh Maheshwari" target="_blank"><img id="wse-buttons-preview" src="https://cdn.trakteer.id/images/embed/trbtn-red-5.png" height="36" style="border: 0px; height: 36px;" alt="Trakteer Saya"></a>
