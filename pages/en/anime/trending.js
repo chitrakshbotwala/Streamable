@@ -3,11 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton";
-import Footer from "../../../components/footer";
+import Footer from "@/components/shared/footer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]";
-import MobileNav from "../../../components/home/mobileNav";
 import Head from "next/head";
+import MobileNav from "@/components/shared/MobileNav";
 
 export default function TrendingAnime({ sessions }) {
   const [data, setData] = useState(null);
@@ -97,11 +97,11 @@ export default function TrendingAnime({ sessions }) {
   return (
     <Fragment>
       <Head>
-        <title>Streamable - Trending Anime</title>
+        <title>streamable - Trending Anime</title>
         <meta name="title" content="Trending Anime" />
         <meta
           name="description"
-          content="Explore Top Trending Anime - Dive into the latest and most popular anime series on Streamable. From thrilling action to heartwarming romance, discover the buzzworthy shows that have everyone talking. Stream now and stay up-to-date with the hottest anime trends!"
+          content="Explore Top Trending Anime - Dive into the latest and most popular anime series on streamable. From thrilling action to heartwarming romance, discover the buzzworthy shows that have everyone talking. Stream now and stay up-to-date with the hottest anime trends!"
         />
       </Head>
       <MobileNav sessions={sessions} />

@@ -1,35 +1,40 @@
+import MobileNav from "@/components/shared/MobileNav";
+import { NewNavbar } from "@/components/shared/NavBar";
+import Footer from "@/components/shared/footer";
 import Head from "next/head";
-import Layout from "../../components/layout";
 
 export default function DMCA() {
   return (
     <>
       <Head>
-        <title>Streamable - DMCA</title>
+        <title>streamable - DMCA</title>
         <meta name="DMCA" content="DMCA" />
         <meta property="og:title" content="DMCA" />
         <meta
           property="og:description"
-          content="Streamable.live is committed to respecting the intellectual
+          content="streamable.live is committed to respecting the intellectual
                   property rights of others and complying with the Digital
                   Millennium Copyright Act (DMCA)."
         />
         <meta property="og:image" content="/icon-512x512.png" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/c.svg" />
+        <link rel="icon" href="/svg/c.svg" />
       </Head>
-      <Layout>
+      <>
+        <NewNavbar withNav={true} scrollP={5} shrink={true} />
+
+        <MobileNav hideProfile={true} />
         <div className="min-h-screen z-20 flex w-screen justify-center items-center">
-          <div className="w-[75%] text-2xl gap-7 flex flex-col my-[10rem]">
+          <div className="px-5 lg:px-0 lg:w-[75%] text-2xl gap-7 flex flex-col my-[10rem]">
             <div className="flex">
-              <h1 className="text-4xl font-bold font-karla rounded-md bg-[#212121] p-3">
+              <h1 className="text-4xl font-bold font-karla rounded-md bg-secondary p-3">
                 DMCA - Disclaimer
               </h1>
             </div>
             <div className="flex flex-col gap-10">
               <div className="flex flex-col gap-3 text-[#cdcdcd]">
                 <p>
-                  Streamable.live is committed to respecting the intellectual
+                  streamable.live is committed to respecting the intellectual
                   property rights of others and complying with the Digital
                   Millennium Copyright Act (DMCA). We take copyright
                   infringement seriously and will respond to notices of alleged
@@ -81,26 +86,27 @@ export default function DMCA() {
               </p>
               <h1 className="text-white font-karla">DISCLAIMER:</h1>
               <p className="text-[#cdcdcd]">
-                None of the files listed on Streamable.live are hosted on our
+                None of the files listed on streamable.live are hosted on our
                 servers. All links point to content hosted on third-party
-                websites. Streamable.live does not accept responsibility for content
+                websites. streamable.live does not accept responsibility for content
                 hosted on third-party websites and has no involvement in the
                 downloading/uploading of movies. We only post links that are
                 available on the internet. If you believe that any content on
                 our website infringes upon your intellectual property rights and
                 you hold the copyright for that content, please report it to{" "}
                 <a
-                  href="mailto:contact@Streamable.live?subject=[Streamable]%20-%20Your%20Subject"
+                  href="mailto:contact@streamable.live?subject=[streamable]%20-%20Your%20Subject"
                   className="font-semibold"
                 >
-                  contact@Streamable.live
+                  contact@streamable.live
                 </a>{" "}
                 and the content will be immediately removed.
               </p>
             </div>
           </div>
         </div>
-      </Layout>
+        <Footer />
+      </>
     </>
   );
 }

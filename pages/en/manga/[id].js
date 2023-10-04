@@ -1,17 +1,16 @@
-import dotenv from "dotenv";
-import ChapterSelector from "../../../components/manga/chapters";
-import HamburgerMenu from "../../../components/manga/mobile/hamburgerMenu";
-import Navbar from "../../../components/navbar";
-import TopSection from "../../../components/manga/info/topSection";
-import Footer from "../../../components/footer";
+import ChapterSelector from "@/components/manga/chapters";
+import HamburgerMenu from "@/components/manga/mobile/hamburgerMenu";
+import TopSection from "@/components/manga/info/topSection";
+import Footer from "@/components/shared/footer";
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { setCookie } from "nookies";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]";
-import getAnifyInfo from "../../../lib/anify/info";
+import getAnifyInfo from "@/lib/anify/info";
+import { NewNavbar } from "@/components/shared/NavBar";
 
-export default function Manga({ info, userManga, chapters }) {
+export default function Manga({ info, userManga }) {
   const [domainUrl, setDomainUrl] = useState("");
   const [firstEp, setFirstEp] = useState();
   const chaptersData = info.chapters.data;
@@ -33,7 +32,7 @@ export default function Manga({ info, userManga, chapters }) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content={`Streamable - ${info.title.romaji || info.title.english}`}
+          content={`streamable - ${info.title.romaji || info.title.english}`}
         />
         <meta
           name="twitter:description"
@@ -54,7 +53,7 @@ export default function Manga({ info, userManga, chapters }) {
       </Head>
       <div className="min-h-screen w-screen flex flex-col items-center relative">
         <HamburgerMenu />
-        <Navbar className="absolute top-0 w-full z-40" />
+        <NewNavbar info={info} manga={true} />
         <div className="flex flex-col w-screen items-center gap-5 md:gap-10 py-10 pt-nav">
           <div className="flex-center w-full relative z-30">
             <TopSection info={info} firstEp={firstEp} setCookie={setCookie} />
@@ -84,9 +83,8 @@ export default function Manga({ info, userManga, chapters }) {
 }
 
 export async function getServerSideProps(context) {
-  dotenv.config();
-
   const session = await getServerSession(context.req, context.res, authOptions);
+  const accessToken = session?.user?.token || null;
 
   const { id } = context.query;
   const key = process.env.API_KEY;
@@ -99,55 +97,37 @@ export async function getServerSideProps(context) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
       },
       body: JSON.stringify({
         query: `
-        query ($username: String, $status: MediaListStatus) {
-    MediaListCollection(userName: $username, type: MANGA, status: $status, sort: SCORE_DESC) {
-      user {
-        id
-        name
-      }
-      lists {
-        status
-        name
-        entries {
-          id
-          mediaId
-          status
-          progress
-          score
-          progressVolumes
-          media {
-            id
-            status
-            title {
-              english
-              romaji
+        query ($id: Int) {
+              Media (id: $id) {
+                mediaListEntry {
+                  status
+                  progress
+                  progressVolumes
+                  status
+                }
+                id
+                idMal
+                title {
+                  romaji
+                  english
+                  native
+                }
+              }
             }
-            episodes
-            coverImage {
-              large
-            }
-          }
-        }
-      }
-    }
-  }
         `,
         variables: {
-          username: session?.user?.name,
+          id: parseInt(id),
         },
       }),
     });
     const data = await response.json();
-    const user = data?.data?.MediaListCollection;
-    const userListsCurrent = user?.lists.find((X) => X.status === "CURRENT");
-    const matched = userListsCurrent?.entries.find(
-      (x) => x.mediaId === parseInt(id)
-    );
-    if (matched) {
-      userManga = matched;
+    const user = data?.data?.Media?.mediaListEntry;
+    if (user) {
+      userManga = user;
     }
   }
 

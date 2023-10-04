@@ -2,30 +2,33 @@ import Head from "next/head";
 import Image from "next/image";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import Layout from "../../../components/layout";
-import Content from "../../../components/home/content";
-import Modal from "../../../components/modal";
+import Content from "@/components/home/content";
+import Modal from "@/components/modal";
 
 import { signIn, useSession } from "next-auth/react";
-import AniList from "../../../components/media/aniList";
-import ListEditor from "../../../components/listEditor";
+import AniList from "@/components/media/aniList";
+import ListEditor from "@/components/listEditor";
 
-import { GET_MEDIA_USER } from "../../../queries";
-import { GET_MEDIA_INFO } from "../../../queries";
+import DetailTop from "@/components/anime/mobile/topSection";
+import AnimeEpisode from "@/components/anime/episode";
+import { useAniList } from "@/lib/anilist/useAnilist";
+import Footer from "@/components/shared/footer";
+import { mediaInfoQuery } from "@/lib/graphql/query";
+import MobileNav from "@/components/shared/MobileNav";
 
-import { ToastContainer } from "react-toastify";
-
-import DetailTop from "../../../components/anime/mobile/topSection";
-import DesktopDetails from "../../../components/anime/infoDetails";
-import AnimeEpisode from "../../../components/anime/episode";
+import Characters from "@/components/anime/charactersCard";
+import { redis } from "@/lib/redis";
 
 export default function Info({ info, color }) {
   const { data: session } = useSession();
+  const { getUserLists } = useAniList(session);
+
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statuses, setStatuses] = useState(null);
   const [domainUrl, setDomainUrl] = useState("");
-  const [showAll, setShowAll] = useState(false);
+  const [watch, setWatch] = useState();
+
   const [open, setOpen] = useState(false);
   const { id } = useRouter().query;
 
@@ -45,40 +48,20 @@ export default function Info({ info, color }) {
           setStatuses(null);
 
           if (session?.user?.name) {
-            const response = await fetch("https://graphql.anilist.co/", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                query: GET_MEDIA_USER,
-                variables: {
-                  username: session?.user?.name,
-                },
-              }),
-            });
+            const res = await getUserLists(info.id);
+            const user = res?.data?.Media?.mediaListEntry;
 
-            const responseData = await response.json();
-
-            const prog = responseData?.data?.MediaListCollection;
-
-            if (prog && prog.lists.length > 0) {
-              const gut = prog.lists
-                .flatMap((item) => item.entries)
-                .find((item) => item.mediaId === parseInt(id[0]));
-
-              if (gut) {
-                setProgress(gut.progress);
-                const statusMapping = {
-                  CURRENT: { name: "Watching", value: "CURRENT" },
-                  PLANNING: { name: "Plan to watch", value: "PLANNING" },
-                  COMPLETED: { name: "Completed", value: "COMPLETED" },
-                  DROPPED: { name: "Dropped", value: "DROPPED" },
-                  PAUSED: { name: "Paused", value: "PAUSED" },
-                  REPEATING: { name: "Rewatching", value: "REPEATING" },
-                };
-                setStatuses(statusMapping[gut.status]);
-              }
+            if (user) {
+              setProgress(user.progress);
+              const statusMapping = {
+                CURRENT: { name: "Watching", value: "CURRENT" },
+                PLANNING: { name: "Plan to watch", value: "PLANNING" },
+                COMPLETED: { name: "Completed", value: "COMPLETED" },
+                DROPPED: { name: "Dropped", value: "DROPPED" },
+                PAUSED: { name: "Paused", value: "PAUSED" },
+                REPEATING: { name: "Rewatching", value: "REPEATING" },
+              };
+              setStatuses(statusMapping[user.status]);
             }
           }
         } catch (error) {
@@ -120,7 +103,7 @@ export default function Info({ info, color }) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content={`Streamable - ${info.title.romaji || info.title.english}`}
+          content={`streamable - ${info.title.romaji || info.title.english}`}
         />
         <meta
           name="twitter:description"
@@ -133,7 +116,6 @@ export default function Info({ info, color }) {
           }&image=${info.bannerImage || info.coverImage.extraLarge}`}
         />
       </Head>
-      <ToastContainer pauseOnHover={false} />
       <Modal open={open} onClose={() => handleClose()}>
         <div>
           {!session && (
@@ -167,62 +149,49 @@ export default function Info({ info, color }) {
           )}
         </div>
       </Modal>
-      <Layout navTop="text-white bg-primary lg:pt-0 lg:px-0 bg-slate bg-opacity-40 z-50">
-        <div className="w-screen min-h-screen relative flex flex-col items-center bg-primary gap-5">
-          <div className="bg-image w-screen">
-            <div className="bg-gradient-to-t from-primary from-10% to-transparent absolute h-[300px] w-screen z-10 inset-0" />
-            {info ? (
-              <>
-                {info?.bannerImage && (
-                  <Image
-                    src={info?.bannerImage}
-                    priority={true}
-                    alt="banner anime"
-                    height={1000}
-                    width={1000}
-                    className="hidden md:block object-cover bg-image w-screen absolute top-0 left-0 h-[300px] brightness-[70%] z-0"
-                  />
-                )}
-                <Image
-                  src={info?.coverImage.extraLarge || info?.coverImage.large}
-                  priority={true}
-                  alt="banner anime"
-                  height={1000}
-                  width={1000}
-                  className="md:hidden object-cover bg-image w-screen absolute top-0 left-0 h-[300px] brightness-[70%] z-0"
-                />
-              </>
-            ) : (
-              <div className="bg-image w-screen absolute top-0 left-0 h-[300px]" />
-            )}
-          </div>
-          <div className="lg:w-[90%] xl:w-[75%] lg:pt-[10rem] z-30 flex flex-col gap-5">
-            {/* Mobile Anime Information */}
-
-            <DetailTop
-              info={info}
-              handleOpen={handleOpen}
-              loading={loading}
-              statuses={statuses}
+      <MobileNav sessions={session} hideProfile={true} />
+      <main className="w-screen min-h-screen relative flex flex-col items-center bg-primary gap-5">
+        <div className="w-screen absolute">
+          <div className="bg-gradient-to-t from-primary from-10% to-transparent absolute h-[280px] w-screen z-10 inset-0" />
+          {info?.bannerImage && (
+            <Image
+              src={info?.bannerImage}
+              alt="banner anime"
+              height={1000}
+              width={1000}
+              blurDataURL={info?.bannerImage}
+              className="object-cover bg-image blur-[2px] w-screen absolute top-0 left-0 h-[250px] brightness-[55%] z-0"
             />
+          )}
+        </div>
+        <div className="w-full lg:max-w-screen-lg xl:max-w-screen-2xl z-30 flex flex-col gap-5">
+          <DetailTop
+            info={info}
+            session={session}
+            handleOpen={handleOpen}
+            loading={loading}
+            statuses={statuses}
+            watchUrl={watch}
+            progress={progress}
+            color={color}
+          />
 
-            {/* PC Anime Information*/}
-            <DesktopDetails
-              info={info}
-              color={color}
-              handleOpen={handleOpen}
-              loading={loading}
-              statuses={statuses}
-              setShowAll={setShowAll}
-              showAll={showAll}
-            />
+          <AnimeEpisode
+            info={info}
+            session={session}
+            progress={progress}
+            setProgress={setProgress}
+            setWatch={setWatch}
+          />
 
-            {/* Episodes */}
+          {info?.characters?.edges && (
+            <div className="w-full">
+              <Characters info={info?.characters?.edges} />
+            </div>
+          )}
 
-            <AnimeEpisode info={info} progress={progress} />
-          </div>
           {info && rec?.length !== 0 && (
-            <div className="w-screen lg:w-[90%] xl:w-[85%]">
+            <div className="w-full">
               <Content
                 ids="recommendAnime"
                 section="Recommendations"
@@ -231,51 +200,85 @@ export default function Info({ info, color }) {
             </div>
           )}
         </div>
-      </Layout>
+      </main>
+      <Footer />
     </>
   );
 }
 
-export async function getServerSideProps(context) {
-  const { id } = context.query;
+export async function getServerSideProps(ctx) {
+  const { id } = ctx.query;
   const API_URI = process.env.API_URI;
 
-  const res = await fetch("https://graphql.anilist.co/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      query: GET_MEDIA_INFO,
-      variables: {
-        id: id?.[0],
-      },
-    }),
-  });
+  let cache;
 
-  const json = await res.json();
-  const data = json?.data?.Media;
-
-  if (!data) {
-    return {
-      notFound: true,
-    };
+  if (redis) {
+    cache = await redis.get(`anime:${id}`);
   }
 
-  const textColor = setTxtColor(data?.coverImage?.color);
+  if (cache) {
+    const { info, color } = JSON.parse(cache);
+    return {
+      props: {
+        info,
+        color,
+        api: API_URI,
+      },
+    };
+  } else {
+    const resp = await fetch("https://graphql.anilist.co/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: mediaInfoQuery,
+        variables: {
+          id: id?.[0],
+        },
+      }),
+    });
 
-  const color = {
-    backgroundColor: `${data?.coverImage?.color || "#ffff"}`,
-    color: textColor,
-  };
+    const json = await resp.json();
+    const data = json?.data?.Media;
 
-  return {
-    props: {
-      info: data,
-      color: color,
-      api: API_URI,
-    },
-  };
+    const cacheTime = data.nextAiringEpisode?.episode
+      ? 60 * 10
+      : 60 * 60 * 24 * 30;
+
+    if (!data) {
+      return {
+        notFound: true,
+      };
+    }
+
+    const textColor = setTxtColor(data?.coverImage?.color);
+
+    const color = {
+      backgroundColor: `${data?.coverImage?.color || "#ffff"}`,
+      color: textColor,
+    };
+
+    if (redis) {
+      await redis.set(
+        `anime:${id}`,
+        JSON.stringify({
+          info: data,
+          color: color,
+        }),
+        "EX",
+        cacheTime
+      );
+    }
+
+    return {
+      props: {
+        info: data,
+        color: color,
+        api: API_URI,
+      },
+    };
+  }
 }
 
 function getBrightness(hexColor) {

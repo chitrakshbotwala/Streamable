@@ -1,103 +1,116 @@
-import { aniListData } from "../../lib/anilist/AniList";
-import React, { useState, useEffect, Fragment } from "react";
+import { aniListData } from "@/lib/anilist/AniList";
+import { useState, useEffect, Fragment } from "react";
 import Head from "next/head";
 import Link from "next/link";
-import Footer from "../../components/footer";
+import Footer from "@/components/shared/footer";
 import Image from "next/image";
-import Content from "../../components/home/content";
+import Content from "@/components/home/content";
 
 import { motion } from "framer-motion";
 
-import { signOut } from "next-auth/react";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../api/auth/[...nextauth]";
-import SearchBar from "../../components/searchBar";
-import Genres from "../../components/home/genres";
-import Schedule from "../../components/home/schedule";
-import getUpcomingAnime from "../../lib/anilist/getUpcomingAnime";
-import { useCountdown } from "../../utils/useCountdownSeconds";
+import { signOut, useSession } from "next-auth/react";
+import Genres from "@/components/home/genres";
+import Schedule from "@/components/home/schedule";
+import getUpcomingAnime from "@/lib/anilist/getUpcomingAnime";
 
-import Navigasi from "../../components/home/staticNav";
-import MobileNav from "../../components/home/mobileNav";
-import axios from "axios";
-import { createUser } from "../../prisma/user";
+import GetMedia from "@/lib/anilist/getMedia";
+// import UserRecommendation from "../../components/home/recommendation";
+import MobileNav from "@/components/shared/MobileNav";
+import { getGreetings } from "@/utils/getGreetings";
+import { redis } from "@/lib/redis";
+import { NewNavbar } from "@/components/shared/NavBar";
 
-import { checkAdBlock } from "adblock-checker";
-import { ToastContainer, toast } from "react-toastify";
-import { useAniList } from "../../lib/anilist/useAnilist";
+export async function getServerSideProps() {
+  let cachedData;
 
-export async function getServerSideProps(context) {
-  const session = await getServerSession(context.req, context.res, authOptions);
-
-  try {
-    if (session) {
-      await createUser(session.user.name);
-    }
-  } catch (error) {
-    console.error(error);
+  if (redis) {
+    cachedData = await redis.get("index_server");
   }
 
-  const trendingDetail = await aniListData({
-    sort: "TRENDING_DESC",
-    page: 1,
-  });
-  const popularDetail = await aniListData({
-    sort: "POPULARITY_DESC",
-    page: 1,
-  });
-  const genreDetail = await aniListData({ sort: "TYPE", page: 1 });
+  if (cachedData) {
+    const { genre, detail, populars } = JSON.parse(cachedData);
+    const upComing = await getUpcomingAnime();
+    return {
+      props: {
+        genre,
+        detail,
+        populars,
+        upComing,
+      },
+    };
+  } else {
+    const trendingDetail = await aniListData({
+      sort: "TRENDING_DESC",
+      page: 1,
+    });
+    const popularDetail = await aniListData({
+      sort: "POPULARITY_DESC",
+      page: 1,
+    });
+    const genreDetail = await aniListData({ sort: "TYPE", page: 1 });
 
-  const upComing = await getUpcomingAnime();
+    if (redis) {
+      await redis.set(
+        "index_server",
+        JSON.stringify({
+          genre: genreDetail.props,
+          detail: trendingDetail.props,
+          populars: popularDetail.props,
+        }), // set cache for 2 hours
+        "EX",
+        60 * 60 * 2
+      );
+    }
 
-  return {
-    props: {
-      genre: genreDetail.props,
-      detail: trendingDetail.props,
-      populars: popularDetail.props,
-      sessions: session,
-      upComing,
-    },
-  };
+    const upComing = await getUpcomingAnime();
+
+    return {
+      props: {
+        genre: genreDetail.props,
+        detail: trendingDetail.props,
+        populars: popularDetail.props,
+        upComing,
+      },
+    };
+  }
 }
 
-export default function Home({ detail, populars, sessions, upComing }) {
-  const { media: current } = useAniList(sessions, { stats: "CURRENT" });
-  const { media: plan } = useAniList(sessions, { stats: "PLANNING" });
-  const { media: release } = useAniList(sessions);
+export default function Home({ detail, populars, upComing }) {
+  const { data: sessions } = useSession();
+  const { anime: currentAnime, manga: currentManga } = GetMedia(sessions, {
+    stats: "CURRENT",
+  });
+  const { anime: plan } = GetMedia(sessions, { stats: "PLANNING" });
+  const { anime: release } = GetMedia(sessions);
 
   const [schedules, setSchedules] = useState(null);
-
   const [anime, setAnime] = useState([]);
 
+  const [recentAdded, setRecentAdded] = useState([]);
+
+  async function getRecent() {
+    const data = await fetch(`/api/v2/etc/recent/1`)
+      .then((res) => res.json())
+      .catch((err) => console.log(err));
+
+    setRecentAdded(data?.results);
+  }
+
   useEffect(() => {
-    async function adBlock() {
-      const ad = await checkAdBlock();
-      if (ad) {
-        toast.dark(
-          "Please disable your adblock for better experience, we don't have any ads on our site.",
-          {
-            position: "top-center",
-            autoClose: false,
-            hideProgressBar: true,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            theme: "dark",
-          }
-        );
+    if (sessions?.user?.version) {
+      if (sessions.user.version !== "1.0.1") {
+        signOut("AniListProvider");
       }
     }
-    adBlock();
+  }, [sessions?.user?.version]);
+
+  useEffect(() => {
+    getRecent();
   }, []);
 
   const update = () => {
     setAnime((prevAnime) => prevAnime.slice(1));
   };
-
-  const [days, hours, minutes, seconds] = useCountdown(
-    anime[0]?.nextAiringEpisode?.airingAt * 1000 || Date.now(),
-    update
-  );
 
   useEffect(() => {
     if (upComing && upComing.length > 0) {
@@ -107,13 +120,17 @@ export default function Home({ detail, populars, sessions, upComing }) {
 
   useEffect(() => {
     const getSchedule = async () => {
-      const res = await fetch(`/api/anify/schedule`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`/api/v2/etc/schedule`);
+        const data = await res.json();
 
-      if (!res.ok) {
-        setSchedules(null);
-      } else {
-        setSchedules(data);
+        if (!res.ok) {
+          setSchedules(null);
+        } else {
+          setSchedules(data);
+        }
+      } catch (err) {
+        console.log(err);
       }
     };
     getSchedule();
@@ -144,9 +161,9 @@ export default function Home({ detail, populars, sessions, upComing }) {
     getRelease();
   }, [release]);
 
-  const [list, setList] = useState(null);
+  const [listAnime, setListAnime] = useState(null);
+  const [listManga, setListManga] = useState(null);
   const [planned, setPlanned] = useState(null);
-  const [greeting, setGreeting] = useState("");
   const [user, setUser] = useState(null);
   const [removed, setRemoved] = useState();
 
@@ -157,6 +174,21 @@ export default function Home({ detail, populars, sessions, upComing }) {
 
   useEffect(() => {
     async function userData() {
+      try {
+        if (sessions?.user?.name) {
+          await fetch(`/api/user/profile`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              name: sessions.user.name,
+            }),
+          });
+        }
+      } catch (error) {
+        console.log(error);
+      }
       let data;
       try {
         if (sessions?.user?.name) {
@@ -228,27 +260,18 @@ export default function Home({ detail, populars, sessions, upComing }) {
   }, [sessions?.user?.name, removed]);
 
   useEffect(() => {
-    const time = new Date().getHours();
-    let greeting = "";
-
-    if (time >= 5 && time < 12) {
-      greeting = "Good morning";
-    } else if (time >= 12 && time < 18) {
-      greeting = "Good afternoon";
-    } else if (time >= 18 && time < 22) {
-      greeting = "Good evening";
-    } else if (time >= 22 || time < 5) {
-      greeting = "Good night";
-    }
-
-    setGreeting(greeting);
-
     async function userData() {
       if (!sessions?.user?.name) return;
 
       const getMedia =
-        current.filter((item) => item.status === "CURRENT")[0] || null;
-      const list = getMedia?.entries
+        currentAnime.find((item) => item.status === "CURRENT") || null;
+      const listAnime = getMedia?.entries
+        .map(({ media }) => media)
+        .filter((media) => media);
+
+      const getManga =
+        currentManga?.find((item) => item.status === "CURRENT") || null;
+      const listManga = getManga?.entries
         .map(({ media }) => media)
         .filter((media) => media);
 
@@ -256,55 +279,68 @@ export default function Home({ detail, populars, sessions, upComing }) {
         .map(({ media }) => media)
         .filter((media) => media);
 
-      if (list) {
-        setList(list.reverse());
+      if (listManga) {
+        setListManga(listManga);
+      }
+      if (listAnime) {
+        setListAnime(listAnime);
       }
       if (planned) {
-        setPlanned(planned.reverse());
+        setPlanned(planned);
       }
     }
     userData();
-  }, [sessions?.user?.name, current, plan]);
+  }, [sessions?.user?.name, currentAnime, plan]);
+
+  // console.log({ recentAdded });
 
   return (
     <Fragment>
       <Head>
-        <title>Streamable</title>
+        <title>streamable</title>
         <meta charSet="UTF-8"></meta>
+        <link rel="icon" href="/svg/c.svg" />
+        <link rel="canonical" href="https://streamable.live/en/" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="title" content="Streamable" />
+        {/* Write the best SEO for this homepage */}
         <meta
           name="description"
-          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
+          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
         />
         <meta
+          name="keywords"
+          content="anime, anime streaming, anime streaming website, anime streaming free, anime streaming website free, anime streaming website free english subbed, anime streaming website free english dubbed, anime streaming website free english subbed and dubbed, anime streaming webs
+          ite free english subbed and dubbed download, anime streaming website free english subbed and dubbed"
+        />
+        <meta name="robots" content="index, follow" />
+
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://streamable.live/" />
+        <meta
+          property="og:title"
+          content="streamable - Free Anime and Manga Streaming"
+        />
+        <meta
+          property="og:description"
+          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
+        />
+        <meta property="og:image" content="/preview.png" />
+        <meta property="og:site_name" content="streamable" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta
           name="twitter:title"
-          content="Streamable - Free Anime and Manga Streaming"
+          content="streamable - Free Anime and Manga Streaming"
         />
         <meta
           name="twitter:description"
-          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
+          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
         />
-        <meta
-          name="twitter:image"
-          content="https://beta.Streamable.live/preview.png"
-        />
-
-        <link rel="icon" href="/c.svg" />
+        <meta name="twitter:image" content="/preview.png" />
       </Head>
+      <MobileNav sessions={sessions} hideProfile={true} />
 
-      <MobileNav sessions={sessions} />
-
-      <div className="h-auto w-screen bg-[#141519] text-[#dbdcdd] ">
-        <Navigasi />
-        <SearchBar />
-        <ToastContainer
-          pauseOnHover={false}
-          style={{
-            width: "400px",
-          }}
-        />
-
+      <NewNavbar paddingY="pt-2 lg:pt-10" withNav={true} home={true} />
+      <div className="h-auto w-screen bg-[#141519] text-[#dbdcdd]">
         {/* PC / TABLET */}
         <div className=" hidden justify-center lg:flex my-16">
           <div className="relative grid grid-rows-2 items-center lg:flex lg:h-[467px] lg:w-[80%] lg:justify-between">
@@ -317,15 +353,12 @@ export default function Home({ detail, populars, sessions, upComing }) {
                 dangerouslySetInnerHTML={{ __html: data?.description }}
               />
 
-              <div className="lg:pt-5">
+              <div className="lg:pt-5 flex">
                 <Link
                   href={`/en/anime/${data.id}`}
-                  legacyBehavior
-                  className="flex"
+                  className="rounded-sm p-3 text-md font-karla font-light ring-1 ring-[#FF7F57]"
                 >
-                  <a className="rounded-sm p-3 text-md font-karla font-light ring-1 ring-[#FF7F57]">
-                    START WATCHING
-                  </a>
+                  START WATCHING
                 </Link>
               </div>
             </div>
@@ -336,9 +369,9 @@ export default function Home({ detail, populars, sessions, upComing }) {
                 <Image
                   draggable={false}
                   src={data.coverImage?.extraLarge || data.image}
-                  alt={`alt for ${data.title.english || data.title.romaji}`}
-                  width={460}
-                  height={662}
+                  alt={`cover ${data.title.english || data.title.romaji}`}
+                  width={1200}
+                  height={1200}
                   priority
                   className="rounded-tl-xl rounded-tr-xl object-cover bg-blend-overlay lg:h-[467px] lg:w-[322px]"
                 />
@@ -346,15 +379,16 @@ export default function Home({ detail, populars, sessions, upComing }) {
             </div>
           </div>
         </div>
-        {/* {!sessions && (
-          <h1 className="font-bold font-karla mx-5 text-[32px] mt-2 lg:mx-24 xl:mx-36">
-            {greeting}!
-          </h1>
-        )} */}
+
         {sessions && (
           <div className="flex items-center justify-center lg:bg-none mt-4 lg:mt-0 w-screen">
             <div className="lg:w-[85%] w-screen px-5 lg:px-0 lg:text-4xl flex items-center gap-3 text-2xl font-bold font-karla">
-              {greeting},<h1 className="lg:hidden">{sessions?.user.name}</h1>
+              {getGreetings() && (
+                <>
+                  {getGreetings()},
+                  <h1 className="lg:hidden">{sessions?.user.name}</h1>
+                </>
+              )}
               <button
                 onClick={() => signOut()}
                 className="hidden text-center relative lg:flex justify-center group"
@@ -368,15 +402,15 @@ export default function Home({ detail, populars, sessions, upComing }) {
           </div>
         )}
 
-        <div className="lg:mt-16 mt-5 flex flex-col items-center">
+        <div className="lg:mt-16 mt-5 flex flex-col gap-5 items-center">
           <motion.div
-            className="w-screen flex-none lg:w-[87%]"
+            className="w-screen flex-none lg:w-[95%] xl:w-[87%]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.5, staggerChildren: 0.2 }} // Add staggerChildren prop
           >
-            {user?.length > 0 && (
-              <motion.div // Add motion.div to each child component
+            {user?.length > 0 && user?.some((i) => i?.watchId) && (
+              <motion.section // Add motion.div to each child component
                 key="recentlyWatched"
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -390,11 +424,11 @@ export default function Home({ detail, populars, sessions, upComing }) {
                   userName={sessions?.user?.name}
                   setRemoved={setRemoved}
                 />
-              </motion.div>
+              </motion.section>
             )}
 
             {sessions && releaseData?.length > 0 && (
-              <motion.div // Add motion.div to each child component
+              <motion.section // Add motion.div to each child component
                 key="onGoing"
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -408,11 +442,11 @@ export default function Home({ detail, populars, sessions, upComing }) {
                   og={prog}
                   userName={sessions?.user?.name}
                 />
-              </motion.div>
+              </motion.section>
             )}
 
-            {sessions && list?.length > 0 && (
-              <motion.div // Add motion.div to each child component
+            {sessions && listAnime?.length > 0 && (
+              <motion.section // Add motion.div to each child component
                 key="listAnime"
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -422,16 +456,49 @@ export default function Home({ detail, populars, sessions, upComing }) {
                 <Content
                   ids="listAnime"
                   section="Your Watch List"
-                  data={list}
+                  data={listAnime}
                   og={prog}
                   userName={sessions?.user?.name}
                 />
-              </motion.div>
+              </motion.section>
             )}
+
+            {sessions && listManga?.length > 0 && (
+              <motion.section // Add motion.div to each child component
+                key="listManga"
+                initial={{ y: 20, opacity: 0 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+              >
+                <Content
+                  ids="listManga"
+                  section="Your Manga List"
+                  data={listManga}
+                  // og={prog}
+                  userName={sessions?.user?.name}
+                />
+              </motion.section>
+            )}
+
+            {/* {recommendations.length > 0 && (
+              <div className="space-y-5 mb-10">
+                <div className="px-5">
+                  <p className="text-sm lg:text-base">
+                    Based on Your List
+                    <br />
+                    <span className="font-karla text-[20px] lg:text-3xl font-bold">
+                      Recommendations
+                    </span>
+                  </p>
+                </div>
+                <UserRecommendation data={recommendations} />
+              </div>
+            )} */}
 
             {/* SECTION 2 */}
             {sessions && planned?.length > 0 && (
-              <motion.div // Add motion.div to each child component
+              <motion.section // Add motion.div to each child component
                 key="plannedAnime"
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -444,12 +511,36 @@ export default function Home({ detail, populars, sessions, upComing }) {
                   data={planned}
                   userName={sessions?.user?.name}
                 />
-              </motion.div>
+              </motion.section>
+            )}
+          </motion.div>
+
+          <motion.div
+            className="w-screen flex-none lg:w-[95%] xl:w-[87%]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5, staggerChildren: 0.2 }} // Add staggerChildren prop
+          >
+            {/* SECTION 3 */}
+            {recentAdded?.length > 0 && (
+              <motion.section // Add motion.div to each child component
+                key="recentAdded"
+                initial={{ y: 20, opacity: 0 }}
+                transition={{ duration: 0.5 }}
+                whileInView={{ y: 0, opacity: 1 }}
+                viewport={{ once: true }}
+              >
+                <Content
+                  ids="recentAdded"
+                  section="New Episodes"
+                  data={recentAdded}
+                />
+              </motion.section>
             )}
 
-            {/* SECTION 3 */}
+            {/* SECTION 4 */}
             {detail && (
-              <motion.div // Add motion.div to each child component
+              <motion.section // Add motion.div to each child component
                 key="trendingAnime"
                 initial={{ y: 20, opacity: 0 }}
                 transition={{ duration: 0.5 }}
@@ -461,12 +552,12 @@ export default function Home({ detail, populars, sessions, upComing }) {
                   section="Trending Now"
                   data={detail.data}
                 />
-              </motion.div>
+              </motion.section>
             )}
 
             {/* Schedule */}
             {anime.length > 0 && (
-              <motion.div // Add motion.div to each child component
+              <motion.section // Add motion.div to each child component
                 key="schedule"
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -475,20 +566,16 @@ export default function Home({ detail, populars, sessions, upComing }) {
               >
                 <Schedule
                   data={anime[0]}
-                  time={{
-                    days: days || 0,
-                    hours: hours || 0,
-                    minutes: minutes || 0,
-                    seconds: seconds || 0,
-                  }}
+                  anime={anime}
+                  update={update}
                   scheduleData={schedules}
                 />
-              </motion.div>
+              </motion.section>
             )}
 
-            {/* SECTION 4 */}
+            {/* SECTION 5 */}
             {popular && (
-              <motion.div // Add motion.div to each child component
+              <motion.section // Add motion.div to each child component
                 key="popularAnime"
                 initial={{ y: 20, opacity: 0 }}
                 whileInView={{ y: 0, opacity: 1 }}
@@ -500,10 +587,10 @@ export default function Home({ detail, populars, sessions, upComing }) {
                   section="Popular Anime"
                   data={popular}
                 />
-              </motion.div>
+              </motion.section>
             )}
 
-            <motion.div // Add motion.div to each child component
+            <motion.section // Add motion.div to each child component
               key="Genres"
               initial={{ y: 20, opacity: 0 }}
               whileInView={{ y: 0, opacity: 1 }}
@@ -511,7 +598,7 @@ export default function Home({ detail, populars, sessions, upComing }) {
               viewport={{ once: true }}
             >
               <Genres />
-            </motion.div>
+            </motion.section>
           </motion.div>
         </div>
       </div>

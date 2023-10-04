@@ -3,14 +3,13 @@ import { AnimatePresence, motion as m } from "framer-motion";
 import Skeleton from "react-loading-skeleton";
 import { useRouter } from "next/router";
 import Link from "next/link";
-import Navbar from "../../../components/navbar";
 import Head from "next/head";
-import Footer from "../../../components/footer";
+import Footer from "@/components/shared/footer";
 
 import Image from "next/image";
-import { aniAdvanceSearch } from "../../../lib/anilist/aniAdvanceSearch";
-import MultiSelector from "../../../components/search/dropdown/multiSelector";
-import SingleSelector from "../../../components/search/dropdown/singleSelector";
+import { aniAdvanceSearch } from "@/lib/anilist/aniAdvanceSearch";
+import MultiSelector from "@/components/search/dropdown/multiSelector";
+import SingleSelector from "@/components/search/dropdown/singleSelector";
 import {
   animeFormatOptions,
   formatOptions,
@@ -20,9 +19,12 @@ import {
   seasonOptions,
   tagsOption,
   yearOptions,
-} from "../../../components/search/selection";
-import InputSelect from "../../../components/search/dropdown/inputSelect";
+} from "@/components/search/selection";
+import InputSelect from "@/components/search/dropdown/inputSelect";
 import { Cog6ToothIcon, TrashIcon } from "@heroicons/react/20/solid";
+import useDebounce from "@/lib/hooks/useDebounce";
+import { NewNavbar } from "@/components/shared/NavBar";
+import MobileNav from "@/components/shared/MobileNav";
 
 export async function getServerSideProps(context) {
   const { param } = context.query;
@@ -89,11 +91,14 @@ export default function Card({
 }) {
   const inputRef = useRef(null);
   const router = useRouter();
+  // const { data: session } = useSession();
 
   const [data, setData] = useState();
   const [loading, setLoading] = useState(true);
 
   const [search, setQuery] = useState(query);
+  const debounceSearch = useDebounce(search, 500);
+
   const [type, setSelectedType] = useState(mediaType[index]);
   const [year, setYear] = useState(years);
   const [season, setSeason] = useState(seasons);
@@ -109,7 +114,7 @@ export default function Card({
   async function advance() {
     setLoading(true);
     const data = await aniAdvanceSearch({
-      search: search,
+      search: debounceSearch,
       type: type?.value,
       genres: genre,
       page: page,
@@ -137,7 +142,15 @@ export default function Card({
     setPage(1);
     setNextPage(true);
     advance();
-  }, [search, type, sort, genre, format, season, year]);
+  }, [
+    debounceSearch,
+    type?.value,
+    sort?.value,
+    genre,
+    format?.value,
+    season?.value,
+    year?.value,
+  ]);
 
   useEffect(() => {
     advance();
@@ -192,22 +205,30 @@ export default function Card({
   return (
     <>
       <Head>
-        <title>Streamable - search</title>
+        <title>streamable - search</title>
         <meta name="title" content="Search" />
         <meta name="description" content="Search your favourites Anime/Manga" />
-        <link rel="icon" href="/c.svg" />
+        <link rel="icon" href="/svg/c.svg" />
       </Head>
-      <Navbar />
-      <main className="w-screen min-h-screen">
+
+      <NewNavbar
+        scrollP={10}
+        withNav={true}
+        shrink={true}
+        paddingY="py-1 lg:py-3"
+      />
+      <MobileNav hideProfile={true} />
+      <main className="w-screen min-h-screen z-40 py-14 lg:py-24">
         <div className="max-w-screen-xl flex flex-col gap-3 mx-auto">
-          <div className="w-full flex justify-between items-end gap-2 my-3 lg:gap-10 z-50 px-5 xl:px-0 relative">
+          <div className="w-full flex justify-between items-end gap-2 my-3 lg:gap-10 px-5 xl:px-0 relative">
             <div className="hidden lg:flex items-end w-full gap-5 z-50">
               <InputSelect
                 inputRef={inputRef}
                 data={mediaType}
                 label="Search"
                 keyDown={handleKeyDown}
-                search={query || ""}
+                query={search}
+                setQuery={setQuery}
                 selected={type}
                 setSelected={setSelectedType}
               />
@@ -255,6 +276,8 @@ export default function Card({
                 data={mediaType}
                 label="Search"
                 keyDown={handleKeyDown}
+                query={search}
+                setQuery={setQuery}
                 selected={type}
                 setSelected={setSelectedType}
               />

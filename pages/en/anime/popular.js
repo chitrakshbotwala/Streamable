@@ -3,11 +3,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { Fragment, useEffect, useState } from "react";
 import Skeleton from "react-loading-skeleton";
-import Footer from "../../../components/footer";
+import Footer from "@/components/shared/footer";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../api/auth/[...nextauth]";
-import MobileNav from "../../../components/home/mobileNav";
 import Head from "next/head";
+import MobileNav from "@/components/shared/MobileNav";
 
 export default function PopularAnime({ sessions }) {
   const [data, setData] = useState(null);
@@ -97,11 +97,11 @@ export default function PopularAnime({ sessions }) {
   return (
     <Fragment>
       <Head>
-        <title>Streamable - Popular Anime</title>
+        <title>streamable - Popular Anime</title>
         <meta name="title" content="Popular Anime" />
         <meta
           name="description"
-          content="Explore Beloved Classics and Favorites - Dive into a curated collection of timeless anime on Streamable's Popular Anime Page. From iconic classics to all-time favorites, experience the stories that have captured hearts worldwide. Start streaming now and relive the magic of anime!"
+          content="Explore Beloved Classics and Favorites - Dive into a curated collection of timeless anime on streamable's Popular Anime Page. From iconic classics to all-time favorites, experience the stories that have captured hearts worldwide. Start streaming now and relive the magic of anime!"
         />
       </Head>
       <MobileNav sessions={sessions} />

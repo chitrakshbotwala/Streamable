@@ -1,12 +1,11 @@
 import Link from "next/link";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, Fragment } from "react";
 import { useDraggable } from "react-use-draggable-scroll";
 import Image from "next/image";
 import { MdChevronRight } from "react-icons/md";
 import {
   ChevronRightIcon,
   ArrowRightCircleIcon,
-  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 import { parseCookies } from "nookies";
@@ -15,6 +14,7 @@ import { ChevronLeftIcon } from "@heroicons/react/20/solid";
 import { ExclamationCircleIcon, PlayIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/router";
 import { toast } from "react-toastify";
+import HistoryOptions from "./content/historyOptions";
 
 export default function Content({
   ids,
@@ -109,6 +109,9 @@ export default function Content({
     if (section === "Recently Watched") {
       router.push(`/${lang}/anime/recently-watched`);
     }
+    if (section === "New Episodes") {
+      router.push(`/${lang}/anime/recent`);
+    }
     if (section === "Trending Now") {
       router.push(`/${lang}/anime/trending`);
     }
@@ -123,7 +126,7 @@ export default function Content({
     }
   };
 
-  const removeItem = async (id) => {
+  const removeItem = async (id, aniId) => {
     if (userName) {
       // remove from database
       const res = await fetch(`/api/user/update/episode`, {
@@ -133,24 +136,42 @@ export default function Content({
         },
         body: JSON.stringify({
           name: userName,
-          id: id,
+          id,
+          aniId,
         }),
       });
       const data = await res.json();
 
-      // remove from local storage
-      const artplayerSettings =
-        JSON.parse(localStorage.getItem("artplayer_settings")) || {};
-      if (artplayerSettings[id]) {
-        delete artplayerSettings[id];
-        localStorage.setItem(
-          "artplayer_settings",
-          JSON.stringify(artplayerSettings)
-        );
+      if (id) {
+        // remove from local storage
+        const artplayerSettings =
+          JSON.parse(localStorage.getItem("artplayer_settings")) || {};
+        if (artplayerSettings[id]) {
+          delete artplayerSettings[id];
+          localStorage.setItem(
+            "artplayer_settings",
+            JSON.stringify(artplayerSettings)
+          );
+        }
+      }
+      if (aniId) {
+        const currentData =
+          JSON.parse(localStorage.getItem("artplayer_settings")) || {};
+
+        const updatedData = {};
+
+        for (const key in currentData) {
+          const item = currentData[key];
+          if (item.aniId !== aniId) {
+            updatedData[key] = item;
+          }
+        }
+
+        localStorage.setItem("artplayer_settings", JSON.stringify(updatedData));
       }
 
       // update client
-      setRemoved(id);
+      setRemoved(id || aniId);
 
       if (data?.message === "Episode deleted") {
         toast.success("Episode removed from history", {
@@ -163,17 +184,38 @@ export default function Content({
         });
       }
     } else {
-      const artplayerSettings =
-        JSON.parse(localStorage.getItem("artplayer_settings")) || {};
-      if (artplayerSettings[id]) {
-        delete artplayerSettings[id];
-        localStorage.setItem(
-          "artplayer_settings",
-          JSON.stringify(artplayerSettings)
-        );
+      if (id) {
+        // remove from local storage
+        const artplayerSettings =
+          JSON.parse(localStorage.getItem("artplayer_settings")) || {};
+        if (artplayerSettings[id]) {
+          delete artplayerSettings[id];
+          localStorage.setItem(
+            "artplayer_settings",
+            JSON.stringify(artplayerSettings)
+          );
+        }
+        setRemoved(id);
       }
+      if (aniId) {
+        const currentData =
+          JSON.parse(localStorage.getItem("artplayer_settings")) || {};
 
-      setRemoved(id);
+        // Create a new object to store the updated data
+        const updatedData = {};
+
+        // Iterate through the current data and copy items with different aniId to the updated object
+        for (const key in currentData) {
+          const item = currentData[key];
+          if (item.aniId !== aniId) {
+            updatedData[key] = item;
+          }
+        }
+
+        // Update localStorage with the filtered data
+        localStorage.setItem("artplayer_settings", JSON.stringify(updatedData));
+        setRemoved(aniId);
+      }
     }
   };
 
@@ -214,7 +256,11 @@ export default function Content({
                     className="flex flex-col gap-3 shrink-0 cursor-pointer"
                   >
                     <Link
-                      href={`/${lang}/anime/${anime.id}`}
+                      href={
+                        ids === "listManga"
+                          ? `/en/manga/${anime.id}`
+                          : `/${lang}/anime/${anime.id}`
+                      }
                       className="hover:scale-105 hover:shadow-lg duration-300 ease-out group relative"
                       title={anime.title.romaji}
                     >
@@ -226,7 +272,7 @@ export default function Content({
                             </h1>
                             {checkProgress(progress) &&
                               !clicked?.hasOwnProperty(anime.id) && (
-                                <ExclamationCircleIcon className="w-7 h-7 absolute z-40 -top-3 -right-3" />
+                                <ExclamationCircleIcon className="w-7 h-7 absolute z-40 text-white -top-3 -right-3" />
                               )}
                             {checkProgress(progress) && (
                               <div
@@ -253,39 +299,67 @@ export default function Content({
                           </div>
                         </div>
                       )}
-                      <Image
-                        draggable={false}
-                        src={
-                          anime.image ||
-                          anime.coverImage?.extraLarge ||
-                          anime.coverImage?.large ||
-                          "https://cdn.discordapp.com/attachments/986579286397964290/1058415946945003611/gray_pfp.png"
-                        }
-                        alt={
-                          anime.title.romaji ||
-                          anime.title.english ||
-                          "coverImage"
-                        }
-                        width={500}
-                        height={300}
-                        placeholder="blur"
-                        blurDataURL={
-                          anime.image ||
-                          anime.coverImage?.extraLarge ||
-                          anime.coverImage?.large ||
-                          "https://cdn.discordapp.com/attachments/986579286397964290/1058415946945003611/gray_pfp.png"
-                        }
-                        className="z-20 h-[190px] w-[135px] lg:h-[265px] lg:w-[185px] object-cover rounded-md brightness-90"
-                      />
+                      <div className="h-[190px] w-[135px] lg:h-[265px] lg:w-[185px] rounded-md z-30">
+                        {ids === "recentAdded" && (
+                          <div className="absolute bg-gradient-to-b from-black/30 to-transparent from-5% to-30% top-0 z-30 w-full h-full rounded" />
+                        )}
+                        <Image
+                          draggable={false}
+                          src={
+                            anime.image ||
+                            anime.coverImage?.extraLarge ||
+                            anime.coverImage?.large ||
+                            anime?.coverImage ||
+                            "https://cdn.discordapp.com/attachments/986579286397964290/1058415946945003611/gray_pfp.png"
+                          }
+                          alt={
+                            anime.title.romaji ||
+                            anime.title.english ||
+                            "coverImage"
+                          }
+                          width={500}
+                          height={300}
+                          placeholder="blur"
+                          blurDataURL={
+                            anime.image ||
+                            anime.coverImage?.extraLarge ||
+                            anime.coverImage?.large ||
+                            "https://cdn.discordapp.com/attachments/986579286397964290/1058415946945003611/gray_pfp.png"
+                          }
+                          className="z-20 h-[190px] w-[135px] lg:h-[265px] lg:w-[185px] object-cover rounded-md brightness-90"
+                        />
+                      </div>
+                      {ids === "recentAdded" && (
+                        <Fragment>
+                          <Image
+                            src="/svg/episode-badge.svg"
+                            alt="episode-bade"
+                            width={200}
+                            height={100}
+                            className="w-24 lg:w-32 absolute top-1 -right-[12px] lg:-right-[17px] z-40"
+                          />
+                          <p className="absolute z-40 text-center w-[86px] lg:w-[110px] top-1 -right-2 lg:top-[5.5px] lg:-right-2 font-karla text-sm lg:text-base">
+                            Episode{" "}
+                            <span className="text-white">
+                              {anime?.currentEpisode || anime?.episodeNumber}
+                            </span>
+                          </p>
+                        </Fragment>
+                      )}
                     </Link>
                     {ids !== "onGoing" && (
                       <Link
-                        href={`/en/anime/${anime.id}`}
+                        href={
+                          ids === "listManga"
+                            ? `/en/manga/${anime.id}`
+                            : `/en/anime/${anime.id}`
+                        }
                         className="w-[135px] lg:w-[185px] line-clamp-2"
                         title={anime.title.romaji}
                       >
                         <h1 className="font-karla font-semibold xl:text-base text-[15px]">
-                          {anime.status === "RELEASING" ? (
+                          {anime.status === "RELEASING" ||
+                          ids === "recentAdded" ? (
                             <span className="dots bg-green-500" />
                           ) : anime.status === "NOT_YET_RELEASED" ? (
                             <span className="dots bg-red-500" />
@@ -312,16 +386,11 @@ export default function Content({
                       className="flex flex-col gap-2 shrink-0 cursor-pointer relative group/item"
                     >
                       <div className="absolute flex flex-col gap-1 z-40 top-1 right-1 transition-all duration-200 ease-out opacity-0 group-hover/item:opacity-100 scale-90 group-hover/item:scale-100 group-hover/item:visible invisible ">
-                        <button
-                          type="button"
-                          className="flex flex-col items-center group/delete relative"
-                          onClick={() => removeItem(i.watchId)}
-                        >
-                          <XMarkIcon className="w-6 h-6 shrink-0 bg-primary p-1 rounded-full hover:text-action scale-100 hover:scale-105 transition-all duration-200 ease-out" />
-                          <span className="absolute font-karla bg-secondary shadow-black shadow-2xl py-1 px-2 whitespace-nowrap text-white text-sm rounded-md right-7 -bottom-[2px] z-40 duration-300 transition-all ease-out group-hover/delete:visible group-hover/delete:scale-100 group-hover/delete:translate-x-0 group-hover/delete:opacity-100 opacity-0 translate-x-10 scale-50 invisible">
-                            Remove from history
-                          </span>
-                        </button>
+                        <HistoryOptions
+                          remove={removeItem}
+                          watchId={i.watchId}
+                          aniId={i.aniId}
+                        />
                         {i?.nextId && (
                           <button
                             type="button"
@@ -373,10 +442,10 @@ export default function Content({
                         {i?.image && (
                           <Image
                             src={i?.image}
-                            width={200}
-                            height={200}
+                            width={320}
+                            height={180}
                             alt="Episode Thumbnail"
-                            className="w-fit group-hover:scale-[1.02] duration-300 ease-out z-10"
+                            className="w-full object-cover group-hover:scale-[1.02] duration-300 ease-out z-10"
                           />
                         )}
                       </Link>

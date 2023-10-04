@@ -1,12 +1,18 @@
 import { useEffect, useState, Fragment } from "react";
-import { ChevronDownIcon, ClockIcon } from "@heroicons/react/20/solid";
-import { convertSecondsToTime } from "../../utils/getTimes";
-import ChangeView from "./changeView";
+import { ChevronDownIcon } from "@heroicons/react/20/solid";
+import ViewSelector from "./viewSelector";
 import ThumbnailOnly from "./viewMode/thumbnailOnly";
 import ThumbnailDetail from "./viewMode/thumbnailDetail";
 import ListMode from "./viewMode/listMode";
+import { toast } from "react-toastify";
 
-export default function AnimeEpisode({ info, progress }) {
+export default function AnimeEpisode({
+  info,
+  session,
+  progress,
+  setProgress,
+  setWatch,
+}) {
   const [providerId, setProviderId] = useState(); // default provider
   const [currentPage, setCurrentPage] = useState(1); // for pagination
   const [visible, setVisible] = useState(false); // for mobile view
@@ -22,38 +28,53 @@ export default function AnimeEpisode({ info, progress }) {
 
   useEffect(() => {
     setLoading(true);
-    setProviders(null);
     const fetchData = async () => {
-      try {
-        const [firstResponse, anify] = await Promise.all([
-          fetch(`/api/consumet/episode/${info.id}`).then((res) => res.json()),
-          fetch(
-            `/api/anify/episode/${info.id}${isDub === true ? "?dub=true" : ""}`
-          ).then((res) => res.json()),
-        ]);
+      const response = await fetch(
+        `/api/v2/episode/${info.id}?releasing=${
+          info.status === "RELEASING" ? "true" : "false"
+        }${isDub ? "&dub=true" : ""}`
+      ).then((res) => res.json());
+      const getMap = response.find((i) => i?.map === true) || response[0];
+      let allProvider = response;
 
-        setMapProviders(firstResponse.data[0].episodes);
-
-        if (anify.length > 0) {
-          const defaultProvider = anify.find((x) => x.providerId === "9anime");
-          setProviderId(defaultProvider?.providerId || anify[0].providerId); // set to first provider id
-        }
-
-        setArtStorage(JSON.parse(localStorage.getItem("artplayer_settings")));
-        setProviders(anify);
-        setLoading(false);
-      } catch (error) {
-        setLoading(false);
-        setProviders([]);
+      if (getMap) {
+        allProvider = response.filter((i) => {
+          if (
+            i?.providerId === "gogoanime" &&
+            i?.providerId === "9anime" &&
+            i?.map !== true
+          ) {
+            return null;
+          }
+          return i;
+        });
+        setMapProviders(getMap?.episodes);
       }
+
+      if (allProvider.length > 0) {
+        const defaultProvider = allProvider.find(
+          (x) => x.providerId === "gogoanime" || x.providerId === "9anime"
+        );
+        setProviderId(defaultProvider?.providerId || allProvider[0].providerId); // set to first provider id
+      }
+
+      setView(Number(localStorage.getItem("view")) || 3);
+      setArtStorage(JSON.parse(localStorage.getItem("artplayer_settings")));
+      setProviders(allProvider);
+      setLoading(false);
     };
     fetchData();
+
+    return () => {
+      setProviders(null);
+      setMapProviders(null);
+    };
   }, [info.id, isDub]);
 
   const episodes =
     providers
       ?.find((provider) => provider.providerId === providerId)
-      ?.episodes?.slice(0, mapProviders.length) || [];
+      ?.episodes?.slice(0, mapProviders?.length) || [];
 
   const lastEpisodeIndex = currentPage * itemsPerPage;
   const firstEpisodeIndex = lastEpisodeIndex - itemsPerPage;
@@ -72,36 +93,172 @@ export default function AnimeEpisode({ info, progress }) {
   };
 
   useEffect(() => {
-    if (episodes?.some((item) => item?.title === null)) {
+    if (
+      !mapProviders ||
+      mapProviders?.every(
+        (item) =>
+          item?.img?.includes("https://s4.anilist.co/") ||
+          item?.image?.includes("https://s4.anilist.co/") ||
+          item?.img === null
+      )
+    ) {
       setView(3);
     }
   }, [providerId, episodes]);
 
+  useEffect(() => {
+    if (episodes) {
+      const getEpi = info?.nextAiringEpisode
+        ? episodes.find((i) => i.number === progress + 1)
+        : episodes[0];
+      if (getEpi) {
+        const watchUrl = `/en/anime/watch/${
+          info.id
+        }/${providerId}?id=${encodeURIComponent(getEpi.id)}&num=${
+          getEpi.number
+        }${isDub ? `&dub=${isDub}` : ""}`;
+        setWatch(watchUrl);
+      } else {
+        setWatch(null);
+      }
+    }
+  }, [episodes]);
+
+  useEffect(() => {
+    if (artStorage) {
+      const currentData =
+        JSON.parse(localStorage.getItem("artplayer_settings")) || {};
+
+      // Create a new object to store the updated data
+      const updatedData = {};
+
+      // Iterate through the current data and copy items with different aniId to the updated object
+      for (const key in currentData) {
+        const item = currentData[key];
+        if (Number(item.aniId) === info.id && item.provider === providerId) {
+          updatedData[key] = item;
+        }
+      }
+
+      if (!session?.user?.name) {
+        const maxWatchedEpisode = Object.keys(updatedData).reduce(
+          (maxEpisode, key) => {
+            const episodeData = updatedData[key];
+            if (episodeData.timeWatched >= episodeData.duration * 0.9) {
+              return Math.max(maxEpisode, episodeData.episode);
+            }
+            return maxEpisode;
+          },
+          0
+        );
+
+        setProgress(maxWatchedEpisode);
+      } else {
+        return;
+      }
+    }
+  }, [providerId, artStorage, info.id, session?.user?.name]);
+
+  let debounceTimeout;
+
+  const handleRefresh = async () => {
+    try {
+      setLoading(true);
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(async () => {
+        const res = await fetch(
+          `/api/v2/episode/${info.id}?releasing=${
+            info.status === "RELEASING" ? "true" : "false"
+          }${isDub ? "&dub=true" : ""}&refresh=true`
+        );
+        if (!res.ok) {
+          console.log(res);
+          toast.error("Something went wrong", {
+            position: "bottom-left",
+            autoClose: 3000,
+            hideProgressBar: true,
+            theme: "colored",
+          });
+          setProviders([]);
+          setLoading(false);
+        } else {
+          const data = await res.json();
+          const getMap = data.find((i) => i?.map === true) || data[0];
+          let allProvider = data;
+
+          if (getMap) {
+            allProvider = data.filter((i) => {
+              if (i?.providerId === "gogoanime" && i?.map !== true) {
+                return null;
+              }
+              return i;
+            });
+            setMapProviders(getMap?.episodes);
+          }
+
+          if (allProvider.length > 0) {
+            const defaultProvider = allProvider.find(
+              (x) => x.providerId === "gogoanime" || x.providerId === "9anime"
+            );
+            setProviderId(
+              defaultProvider?.providerId || allProvider[0].providerId
+            ); // set to first provider id
+          }
+
+          setView(Number(localStorage.getItem("view")) || 3);
+          setArtStorage(JSON.parse(localStorage.getItem("artplayer_settings")));
+          setProviders(allProvider);
+          setLoading(false);
+        }
+      }, 1000);
+    } catch (err) {
+      console.log(err);
+      toast.error("Something went wrong", {
+        position: "bottom-left",
+        autoClose: 3000,
+        hideProgressBar: true,
+        theme: "colored",
+      });
+    }
+  };
+
   return (
     <>
-      <div className="flex flex-col gap-5  px-3">
+      <div className="flex flex-col gap-5 px-3">
         <div className="flex lg:flex-row flex-col gap-5 lg:gap-0 justify-between ">
           <div className="flex justify-between">
-            <div className="flex items-center lg:gap-10 sm:gap-7 gap-3">
+            <div className="flex items-center gap-4 md:gap-5">
               {info && (
                 <h1 className="text-[20px] lg:text-2xl font-bold font-karla">
                   Episodes
                 </h1>
               )}
-              {info?.nextAiringEpisode && (
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-4 text-[10px] xxs:text-sm lg:text-base">
-                    <h1>Next :</h1>
-                    <div className="px-4 rounded-sm font-karla font-bold bg-white text-black">
-                      {convertSecondsToTime(
-                        info.nextAiringEpisode.timeUntilAiring
-                      )}
-                    </div>
-                  </div>
-                  <div className="h-6 w-6">
-                    <ClockIcon />
-                  </div>
-                </div>
+              {info?.status !== "NOT_YET_RELEASED" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleRefresh();
+                    setProviders(null);
+                    setMapProviders(null);
+                  }}
+                  className="relative flex flex-col items-center w-5 h-5 group"
+                >
+                  <span className="absolute pointer-events-none z-40 opacity-0 -translate-y-8 group-hover:-translate-y-10 group-hover:opacity-100 font-karla shadow-tersier shadow-md whitespace-nowrap bg-secondary px-2 py-1 rounded transition-all duration-200 ease-out">
+                    Refresh Episodes
+                  </span>
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      clipRule="evenodd"
+                      fillRule="evenodd"
+                      d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z"
+                    />
+                  </svg>
+                </button>
               )}
             </div>
 
@@ -111,7 +268,8 @@ export default function AnimeEpisode({ info, progress }) {
                 className="flex lg:hidden flex-col items-center relative rounded-md bg-secondary py-1.5 px-3 font-karla text-sm hover:ring-1 ring-action cursor-pointer group"
               >
                 {isDub ? "Dub" : "Sub"}
-                <span className="absolute invisible opacity-0 group-hover:opacity-100 group-hover:scale-100 scale-0 group-hover:-translate-y-7 translate-y-0 group-hover:visible rounded-sm shadow top-0 w-28 bg-secondary text-center transition-all transform duration-200 ease-out">
+
+                <span className="absolute pointer-events-none z-40 opacity-0 -translate-y-8 group-hover:-translate-y-10 group-hover:opacity-100 font-karla shadow-tersier shadow-md whitespace-nowrap bg-secondary px-2 py-1 rounded transition-all duration-200 ease-out">
                   Switch to {isDub ? "Sub" : "Dub"}
                 </span>
               </div>
@@ -147,7 +305,7 @@ export default function AnimeEpisode({ info, progress }) {
                 className="hidden lg:flex flex-col items-center relative rounded-[3px] bg-secondary py-1 px-3 font-karla text-sm hover:ring-1 ring-action cursor-pointer group"
               >
                 {isDub ? "Dub" : "Sub"}
-                <span className="absolute invisible opacity-0 group-hover:opacity-100 group-hover:scale-100 scale-0 group-hover:-translate-y-7 translate-y-0 group-hover:visible rounded-sm shadow top-0 w-28 bg-secondary text-center transition-all transform duration-200 ease-out">
+                <span className="absolute pointer-events-none z-40 opacity-0 -translate-y-8 group-hover:-translate-y-10 group-hover:opacity-100 font-karla shadow-tersier shadow-md whitespace-nowrap bg-secondary px-2 py-1 rounded transition-all duration-200 ease-out">
                   Switch to {isDub ? "Sub" : "Dub"}
                 </span>
               </div>
@@ -171,9 +329,6 @@ export default function AnimeEpisode({ info, progress }) {
                         </option>
                       ))}
                     </select>
-                    {/* <span className="absolute invisible opacity-0 group-hover:opacity-100 group-hover:scale-100 scale-0 group-hover:-translate-y-7 translate-y-0 group-hover:visible rounded-sm shadow top-0 w-32 bg-secondary text-center transition-all transform duration-200 ease-out">
-                      Select Providers
-                    </span> */}
                     <ChevronDownIcon className="absolute right-2 top-1/2 transform -translate-y-1/2 w-5 h-5 pointer-events-none" />
                   </div>
 
@@ -199,10 +354,11 @@ export default function AnimeEpisode({ info, progress }) {
               </>
             )}
 
-            <ChangeView
+            <ViewSelector
               view={view}
               setView={setView}
               episode={currentEpisodes}
+              map={mapProviders}
             />
           </div>
         </div>
@@ -210,11 +366,13 @@ export default function AnimeEpisode({ info, progress }) {
         {/* Episodes */}
         {!loading ? (
           <div
-            className={
+            className={`${
               view === 1
                 ? "grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5 lg:gap-8 place-items-center"
-                : `flex flex-col gap-3`
-            }
+                : view === 2
+                ? "flex flex-col gap-3"
+                : `flex flex-col odd:bg-secondary even:bg-primary`
+            } py-2`}
           >
             {Array.isArray(providers) ? (
               providers.length > 0 ? (
@@ -223,8 +381,6 @@ export default function AnimeEpisode({ info, progress }) {
                     (i) => i.number === episode.number
                   );
 
-                  // console.log(mapData);
-
                   return (
                     <Fragment key={index}>
                       {view === 1 && (
@@ -232,19 +388,18 @@ export default function AnimeEpisode({ info, progress }) {
                           key={index}
                           index={index}
                           info={info}
-                          image={mapData?.image}
+                          image={mapData?.img || mapData?.image}
                           providerId={providerId}
                           episode={episode}
                           artStorage={artStorage}
                           progress={progress}
                           dub={isDub}
-                          // image={thumbnail}
                         />
                       )}
                       {view === 2 && (
                         <ThumbnailDetail
                           key={index}
-                          image={mapData?.image}
+                          image={mapData?.img || mapData?.image}
                           title={mapData?.title}
                           description={mapData?.description}
                           index={index}
@@ -261,8 +416,6 @@ export default function AnimeEpisode({ info, progress }) {
                           key={index}
                           info={info}
                           episode={episode}
-                          index={index}
-                          title={mapData?.title}
                           artStorage={artStorage}
                           providerId={providerId}
                           progress={progress}
@@ -280,7 +433,7 @@ export default function AnimeEpisode({ info, progress }) {
                 </div>
               )
             ) : (
-              <p>{providers.message}</p>
+              <p>{providers?.message}</p>
             )}
           </div>
         ) : (

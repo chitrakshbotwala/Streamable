@@ -1,12 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]";
 
-import {
-  createUser,
-  deleteUser,
-  getUser,
-  updateUser,
-} from "../../../prisma/user";
+import { createUser, deleteUser, getUser, updateUser } from "@/prisma/user";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -15,8 +10,8 @@ export default async function handler(req, res) {
     try {
       switch (req.method) {
         case "POST": {
-          const { name, setting } = req.body;
-          const new_user = await createUser(name, setting);
+          const { name } = req.body;
+          const new_user = await createUser(name);
           if (!new_user) {
             return res.status(200).json({ message: "User is already created" });
           } else {
@@ -24,10 +19,10 @@ export default async function handler(req, res) {
           }
         }
         case "PUT": {
-          const { name, anime } = req.body;
-          const user = await updateUser(name, anime);
+          const { name, settings } = req.body;
+          const user = await updateUser(name, settings);
           if (!user) {
-            return res.status(200).json({ message: "Title is already there" });
+            return res.status(200).json({ message: "Can't update settings" });
           } else {
             return res.status(200).json(user);
           }

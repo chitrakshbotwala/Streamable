@@ -4,9 +4,10 @@ import { authOptions } from "../../auth/[...nextauth]";
 import {
   createList,
   deleteEpisode,
+  deleteList,
   getEpisode,
   updateUserEpisode,
-} from "../../../../prisma/user";
+} from "@/prisma/user";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -80,15 +81,24 @@ export default async function handler(req, res) {
           }
         }
         case "DELETE": {
-          const { name, id } = req.body;
+          const { name, id, aniId } = req.body;
           if (session.user.name !== name) {
             return res.status(401).json({ message: "Unauthorized" });
           } else {
-            const episode = await deleteEpisode(name, id);
-            if (!episode) {
-              return res.status(404).json({ message: "Episode not found" });
-            } else {
-              return res.status(200).json({ message: "Episode deleted" });
+            if (id) {
+              const episode = await deleteEpisode(name, id);
+              if (!episode) {
+                return res.status(404).json({ message: "Episode not found" });
+              } else {
+                return res.status(200).json({ message: "Episode deleted" });
+              }
+            } else if (aniId) {
+              const episode = await deleteList(name, aniId);
+              if (!episode) {
+                return res.status(404).json({ message: "Episode not found" });
+              } else {
+                return res.status(200).json({ message: "Episode deleted" });
+              }
             }
           }
         }
@@ -99,7 +109,7 @@ export default async function handler(req, res) {
     }
   } else {
     // Not Signed in
-    res.status(401);
+    res.status(401).json({ message: "Unauthorized" });
   }
   res.end();
 }

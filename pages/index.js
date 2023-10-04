@@ -7,16 +7,16 @@ export default function Home() {
       <Head>
         <meta
           name="twitter:title"
-          content="Streamable - Free Anime and Manga Streaming"
+          content="streamable - Free Anime and Manga Streaming"
         />
         <meta
           name="twitter:description"
-          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
+          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
         />
         <meta name="twitter:image" content="/preview.png" />
         <meta
           name="description"
-          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
+          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
         />
       </Head>
     </>

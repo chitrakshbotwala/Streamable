@@ -1,21 +1,19 @@
-import dotenv from "dotenv";
 import { useEffect, useRef, useState } from "react";
-import { LeftBar } from "../../../../components/manga/leftBar";
+import { LeftBar } from "@/components/manga/leftBar";
 import { useRouter } from "next/router";
-import RightBar from "../../../../components/manga/rightBar";
-import FirstPanel from "../../../../components/manga/panels/firstPanel";
-import SecondPanel from "../../../../components/manga/panels/secondPanel";
-import ThirdPanel from "../../../../components/manga/panels/thirdPanel";
+import RightBar from "@/components/manga/rightBar";
+import FirstPanel from "@/components/manga/panels/firstPanel";
+import SecondPanel from "@/components/manga/panels/secondPanel";
+import ThirdPanel from "@/components/manga/panels/thirdPanel";
 import { getServerSession } from "next-auth";
 import { authOptions } from "../../../api/auth/[...nextauth]";
-import BottomBar from "../../../../components/manga/mobile/bottomBar";
-import TopBar from "../../../../components/manga/mobile/topBar";
-import { ToastContainer } from "react-toastify";
+import BottomBar from "@/components/manga/mobile/bottomBar";
+import TopBar from "@/components/manga/mobile/topBar";
 import Head from "next/head";
 import nookies from "nookies";
-import ShortCutModal from "../../../../components/manga/modals/shortcutModal";
-import ChapterModal from "../../../../components/manga/modals/chapterModal";
-import getAnifyPage from "../../../../lib/anify/page";
+import ShortCutModal from "@/components/manga/modals/shortcutModal";
+import ChapterModal from "@/components/manga/modals/chapterModal";
+import getAnifyPage from "@/lib/anify/page";
 
 export default function Read({ data, currentId, sessions }) {
   const [info, setInfo] = useState();
@@ -41,8 +39,6 @@ export default function Read({ data, currentId, sessions }) {
   const hasRun = useRef(false);
 
   const router = useRouter();
-
-  // console.log(cookies);
 
   useEffect(() => {
     hasRun.current = false;
@@ -124,7 +120,6 @@ export default function Read({ data, currentId, sessions }) {
         <meta id="CoverImage" data-manga-cover={info?.coverImage} />
       </Head>
       <div className="w-screen flex justify-evenly relative">
-        <ToastContainer pauseOnFocusLoss={false} />
         <ShortCutModal isOpen={isKeyOpen} setIsOpen={setIsKeyOpen} />
         <ChapterModal
           id={info?.id}
@@ -213,8 +208,9 @@ export default function Read({ data, currentId, sessions }) {
           <RightBar
             id={info?.id}
             hasRun={hasRun}
+            error={data?.error}
             session={sessions}
-            data={chapter}
+            data={data}
             currentId={currentId}
             currentChapter={currentChapter}
             layout={layout}
@@ -232,8 +228,6 @@ export default function Read({ data, currentId, sessions }) {
 }
 
 export async function getServerSideProps(context) {
-  dotenv.config();
-
   const cookies = nookies.get(context);
 
   const key = process.env.API_KEY;
