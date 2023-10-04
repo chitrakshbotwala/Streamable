@@ -103,7 +103,7 @@ export default function Info({ info, color }) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content={`streamable - ${info.title.romaji || info.title.english}`}
+          content={`moopa - ${info.title.romaji || info.title.english}`}
         />
         <meta
           name="twitter:description"
