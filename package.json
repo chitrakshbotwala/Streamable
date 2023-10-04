@@ -5,7 +5,7 @@
   "founder": "Chitraksh Maheshwari",
   "scripts": {
     "dev": "next dev",
-    "build": "npx prisma generate && next build",
+    "build": "npx prisma migrate dev && npx prisma generate && next build",
     "export": "next build && next export",
     "start": "next start",
     "lint": "next lint"
