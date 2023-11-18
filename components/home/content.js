@@ -8,13 +8,12 @@ import {
   ArrowRightCircleIcon,
 } from "@heroicons/react/24/outline";
 
-import { parseCookies } from "nookies";
-
 import { ChevronLeftIcon } from "@heroicons/react/20/solid";
 import { ExclamationCircleIcon, PlayIcon } from "@heroicons/react/24/solid";
 import { useRouter } from "next/router";
-import { toast } from "react-toastify";
 import HistoryOptions from "./content/historyOptions";
+import { toast } from "sonner";
+import { truncateImgUrl } from "@/utils/imageUtils";
 
 export default function Content({
   ids,
@@ -24,16 +23,14 @@ export default function Content({
   og,
   userName,
   setRemoved,
+  type = "anime",
 }) {
   const router = useRouter();
 
   const ref = useRef();
   const { events } = useDraggable(ref);
-  const [cookie, setCookie] = useState(null);
 
   const [clicked, setClicked] = useState(false);
-
-  const [lang, setLang] = useState("en");
 
   useEffect(() => {
     const click = localStorage.getItem("clicked");
@@ -41,18 +38,7 @@ export default function Content({
     if (click) {
       setClicked(JSON.parse(click));
     }
-
-    let lang = null;
-    if (!cookie) {
-      const cookie = parseCookies();
-      lang = cookie.lang || null;
-      setCookie(cookie);
-    }
-    if (lang === "en" || lang === null) {
-      setLang("en");
-    } else if (lang === "id") {
-      setLang("id");
-    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const [scrollLeft, setScrollLeft] = useState(false);
@@ -107,22 +93,22 @@ export default function Content({
 
   const goToPage = () => {
     if (section === "Recently Watched") {
-      router.push(`/${lang}/anime/recently-watched`);
+      router.push(`/en/anime/recently-watched`);
     }
     if (section === "New Episodes") {
-      router.push(`/${lang}/anime/recent`);
+      router.push(`/en/anime/recent`);
     }
     if (section === "Trending Now") {
-      router.push(`/${lang}/anime/trending`);
+      router.push(`/en/anime/trending`);
     }
     if (section === "Popular Anime") {
-      router.push(`/${lang}/anime/popular`);
+      router.push(`/en/anime/popular`);
     }
     if (section === "Your Plan") {
-      router.push(`/${lang}/profile/${userName}/#planning`);
+      router.push(`/en/profile/${userName}/#planning`);
     }
     if (section === "On-Going Anime" || section === "Your Watch List") {
-      router.push(`/${lang}/profile/${userName}/#current`);
+      router.push(`/en/profile/${userName}/#current`);
     }
   };
 
@@ -174,14 +160,7 @@ export default function Content({
       setRemoved(id || aniId);
 
       if (data?.message === "Episode deleted") {
-        toast.success("Episode removed from history", {
-          position: "bottom-right",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          draggable: true,
-          theme: "dark",
-        });
+        toast.success("Episode removed from history");
       }
     } else {
       if (id) {
@@ -259,7 +238,7 @@ export default function Content({
                       href={
                         ids === "listManga"
                           ? `/en/manga/${anime.id}`
-                          : `/${lang}/anime/${anime.id}`
+                          : `/en/${type}/${anime.id}`
                       }
                       className="hover:scale-105 hover:shadow-lg duration-300 ease-out group relative"
                       title={anime.title.romaji}
@@ -309,7 +288,7 @@ export default function Content({
                             anime.image ||
                             anime.coverImage?.extraLarge ||
                             anime.coverImage?.large ||
-                            anime?.coverImage ||
+                            truncateImgUrl(anime?.coverImage) ||
                             "https://cdn.discordapp.com/attachments/986579286397964290/1058415946945003611/gray_pfp.png"
                           }
                           alt={
@@ -333,7 +312,7 @@ export default function Content({
                         <Fragment>
                           <Image
                             src="/svg/episode-badge.svg"
-                            alt="episode-bade"
+                            alt="episode-badge"
                             width={200}
                             height={100}
                             className="w-24 lg:w-32 absolute top-1 -right-[12px] lg:-right-[17px] z-40"
@@ -352,7 +331,7 @@ export default function Content({
                         href={
                           ids === "listManga"
                             ? `/en/manga/${anime.id}`
-                            : `/en/anime/${anime.id}`
+                            : `/en/${type.toLowerCase()}/${anime.id}`
                         }
                         className="w-[135px] lg:w-[185px] line-clamp-2"
                         title={anime.title.romaji}

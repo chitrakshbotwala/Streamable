@@ -118,23 +118,23 @@ export default function Home({ detail, populars, upComing }) {
     }
   }, [upComing]);
 
-  useEffect(() => {
-    const getSchedule = async () => {
-      try {
-        const res = await fetch(`/api/v2/etc/schedule`);
-        const data = await res.json();
+  // useEffect(() => {
+  //   const getSchedule = async () => {
+  //     try {
+  //       const res = await fetch(`/api/v2/etc/schedule`);
+  //       const data = await res.json();
 
-        if (!res.ok) {
-          setSchedules(null);
-        } else {
-          setSchedules(data);
-        }
-      } catch (err) {
-        console.log(err);
-      }
-    };
-    getSchedule();
-  }, []);
+  //       if (!res.ok) {
+  //         setSchedules(null);
+  //       } else {
+  //         setSchedules(data);
+  //       }
+  //     } catch (err) {
+  //       console.log(err);
+  //     }
+  //   };
+  //   getSchedule();
+  // }, []);
 
   const [releaseData, setReleaseData] = useState([]);
 
@@ -290,6 +290,8 @@ export default function Home({ detail, populars, upComing }) {
       }
     }
     userData();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessions?.user?.name, currentAnime, plan]);
 
   // console.log({ recentAdded });
@@ -297,15 +299,15 @@ export default function Home({ detail, populars, upComing }) {
   return (
     <Fragment>
       <Head>
-        <title>streamable</title>
+        <title>Streamable</title>
         <meta charSet="UTF-8"></meta>
         <link rel="icon" href="/svg/c.svg" />
-        <link rel="canonical" href="https://streamable.live/en/" />
+        <link rel="canonical" href="https://Streamable.live/en/" />
         <meta name="twitter:card" content="summary_large_image" />
         {/* Write the best SEO for this homepage */}
         <meta
           name="description"
-          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
+          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
         />
         <meta
           name="keywords"
@@ -315,25 +317,25 @@ export default function Home({ detail, populars, upComing }) {
         <meta name="robots" content="index, follow" />
 
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://streamable.live/" />
+        <meta property="og:url" content="https://Streamable.live/" />
         <meta
           property="og:title"
-          content="streamable - Free Anime and Manga Streaming"
+          content="Streamable - Free Anime and Manga Streaming"
         />
         <meta
           property="og:description"
-          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
+          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
         />
         <meta property="og:image" content="/preview.png" />
-        <meta property="og:site_name" content="streamable" />
+        <meta property="og:site_name" content="Streamable" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content="streamable - Free Anime and Manga Streaming"
+          content="Streamable - Free Anime and Manga Streaming"
         />
         <meta
           name="twitter:description"
-          content="Discover your new favorite anime or manga title! streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using streamable today!"
+          content="Discover your new favorite anime or manga title! Streamable offers a vast library of high-quality content, accessible on multiple devices and without any interruptions. Start using Streamable today!"
         />
         <meta name="twitter:image" content="/preview.png" />
       </Head>
@@ -402,7 +404,7 @@ export default function Home({ detail, populars, upComing }) {
           </div>
         )}
 
-        <div className="lg:mt-16 mt-5 flex flex-col gap-5 items-center">
+        <div className="lg:mt-16 mt-5 flex flex-col items-center">
           <motion.div
             className="w-screen flex-none lg:w-[95%] xl:w-[87%]"
             initial={{ opacity: 0 }}

@@ -97,11 +97,11 @@ export default function PopularAnime({ sessions }) {
   return (
     <Fragment>
       <Head>
-        <title>streamable - Popular Anime</title>
+        <title>Streamable - Popular Anime</title>
         <meta name="title" content="Popular Anime" />
         <meta
           name="description"
-          content="Explore Beloved Classics and Favorites - Dive into a curated collection of timeless anime on streamable's Popular Anime Page. From iconic classics to all-time favorites, experience the stories that have captured hearts worldwide. Start streaming now and relive the magic of anime!"
+          content="Explore Beloved Classics and Favorites - Dive into a curated collection of timeless anime on Streamable's Popular Anime Page. From iconic classics to all-time favorites, experience the stories that have captured hearts worldwide. Start streaming now and relive the magic of anime!"
         />
       </Head>
       <MobileNav sessions={sessions} />

@@ -2,9 +2,8 @@
 
 This document contains a summary of all significant changes made to this release.
 
-## 🎉 Update v4.1.3
+## 🎉 Update v4.2.5
 
-### Fixed
+### What's Changed
 
-- Resolved issue with seek button not working
-- Improved homepage and watchpage responsiveness
+- fix: Gogoanime episode id is null

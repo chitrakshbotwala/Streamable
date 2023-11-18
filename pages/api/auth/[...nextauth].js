@@ -68,8 +68,8 @@ export const authOptions = {
 
           let custLists = userLists || [];
 
-          if (!userLists?.includes("Watched using streamable")) {
-            custLists.push("Watched using streamable");
+          if (!userLists?.includes("Watched using Streamable")) {
+            custLists.push("Watched using Streamable");
             const fetchGraphQL = async (query, variables) => {
               const response = await fetch("https://graphql.anilist.co/", {
                 method: "POST",

@@ -9,8 +9,8 @@ const Contact = () => {
         <h1>Contact Us</h1>
         <p>If you have any questions or comments, please email us at:</p>
         <p>
-          <a href="mailto:contact@streamable.live?subject=[streamable]%20-%20Your%20Subject">
-            contact@streamable.live
+          <a href="mailto:contact@Streamable.live?subject=[Streamable]%20-%20Your%20Subject">
+            contact@Streamable.live
           </a>
         </p>
       </div>

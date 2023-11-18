@@ -72,6 +72,8 @@ export default function Info({ info, color }) {
       }
     }
     fetchData();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, info, session?.user?.name]);
 
   function handleOpen() {
@@ -103,7 +105,7 @@ export default function Info({ info, color }) {
         <meta name="twitter:card" content="summary_large_image" />
         <meta
           name="twitter:title"
-          content={`streamable - ${info.title.romaji || info.title.english}`}
+          content={`Moopa - ${info.title.romaji || info.title.english}`}
         />
         <meta
           name="twitter:description"
@@ -143,7 +145,7 @@ export default function Info({ info, color }) {
               stats={statuses?.value}
               prg={progress}
               max={info?.episodes}
-              image={info}
+              info={info}
               close={handleClose}
             />
           )}
@@ -208,7 +210,12 @@ export default function Info({ info, color }) {
 
 export async function getServerSideProps(ctx) {
   const { id } = ctx.query;
-  const API_URI = process.env.API_URI;
+
+  let API_URI;
+  API_URI = process.env.API_URI || null || null;
+  if (API_URI && API_URI.endsWith("/")) {
+    API_URI = API_URI.slice(0, -1);
+  }
 
   let cache;
 

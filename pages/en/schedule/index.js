@@ -216,52 +216,52 @@ export default function Schedule({ schedule }) {
   return (
     <>
       <Head>
-        <title>streamable - Schedule</title>
+        <title>Streamable - Schedule</title>
         {/* write a meta with good seo for this page */}
         <meta
           name="description"
-          content="streamable is a website where you can find all the information about your favorite anime and manga."
+          content="Streamable is a website where you can find all the information about your favorite anime and manga."
         />
         <meta
           name="keywords"
-          content="anime, manga, streamable, anilist, information, schedule, airing, next, currently, airing, anime, manga"
+          content="anime, manga, Streamable, anilist, information, schedule, airing, next, currently, airing, anime, manga"
         />
         <meta name="robots" content="index, follow" />
-        <meta name="author" content="streamable Team" />
-        <meta name="url" content="https://streamable.live/en/schedule" />
-        <meta name="og:title" property="og:title" content="streamable - Schedule" />
+        <meta name="author" content="Streamable Team" />
+        <meta name="url" content="https://Streamable.live/en/schedule" />
+        <meta name="og:title" property="og:title" content="Streamable - Schedule" />
         <meta
           name="og:description"
           property="og:description"
-          content="streamable is a website where you can find all the information about your favorite anime and manga."
+          content="Streamable is a website where you can find all the information about your favorite anime and manga."
         />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://streamable.live/en/schedule" />
+        <meta property="og:url" content="https://Streamable.live/en/schedule" />
         <meta
           property="og:image"
-          content="https://beta.streamable.live/preview.png"
+          content="https://beta.Streamable.live/preview.png"
         />
         <meta
           property="og:image:alt"
-          content="streamable is a website where you can find all the information about your favorite anime and manga."
+          content="Streamable is a website where you can find all the information about your favorite anime and manga."
         />
         <meta property="og:locale" content="en_US" />
-        <meta property="og:site_name" content="streamable" />
+        <meta property="og:site_name" content="Streamable" />
         <meta name="twitter:card" content="summary_large_image" />
-        {/* <meta name="twitter:site" content="@streamable_anime" />
-        <meta name="twitter:creator" content="@streamable_anime" /> */}
+        {/* <meta name="twitter:site" content="@Streamable_anime" />
+        <meta name="twitter:creator" content="@Streamable_anime" /> */}
         <meta
           name="twitter:image"
-          content="https://beta.streamable.live/preview.png"
+          content="https://beta.Streamable.live/preview.png"
         />
         <meta
           name="twitter:image:alt"
-          content="streamable is a website where you can find all the information about your favorite anime and manga."
+          content="Streamable is a website where you can find all the information about your favorite anime and manga."
         />
-        <meta name="twitter:title" content="streamable - Schedule" />
+        <meta name="twitter:title" content="Streamable - Schedule" />
         <meta
           name="twitter:description"
-          content="streamable is a website where you can find all the information about your favorite anime and manga."
+          content="Streamable is a website where you can find all the information about your favorite anime and manga."
         />
       </Head>
       <MobileNav sessions={session} hideProfile={true} />

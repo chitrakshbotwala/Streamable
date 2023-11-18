@@ -4,7 +4,31 @@ import ViewSelector from "./viewSelector";
 import ThumbnailOnly from "./viewMode/thumbnailOnly";
 import ThumbnailDetail from "./viewMode/thumbnailDetail";
 import ListMode from "./viewMode/listMode";
-import { toast } from "react-toastify";
+import { toast } from "sonner";
+
+function allProvider(response, setMapProviders, setProviderId) {
+  const getMap = response.find((i) => i?.map === true);
+  let allProvider = response;
+
+  if (getMap) {
+    allProvider = response.filter((i) => {
+      if (i?.providerId === "gogoanime" && i?.map !== true) {
+        return null;
+      }
+      return i;
+    });
+    setMapProviders(getMap?.episodes);
+  }
+
+  if (allProvider.length > 0) {
+    const defaultProvider = allProvider.find(
+      (x) => x.providerId === "gogoanime" || x.providerId === "9anime"
+    );
+    setProviderId(defaultProvider?.providerId || allProvider[0].providerId); // set to first provider id
+  }
+
+  return allProvider;
+}
 
 export default function AnimeEpisode({
   info,
@@ -34,41 +58,23 @@ export default function AnimeEpisode({
           info.status === "RELEASING" ? "true" : "false"
         }${isDub ? "&dub=true" : ""}`
       ).then((res) => res.json());
-      const getMap = response.find((i) => i?.map === true) || response[0];
-      let allProvider = response;
 
-      if (getMap) {
-        allProvider = response.filter((i) => {
-          if (
-            i?.providerId === "gogoanime" &&
-            i?.providerId === "9anime" &&
-            i?.map !== true
-          ) {
-            return null;
-          }
-          return i;
-        });
-        setMapProviders(getMap?.episodes);
-      }
-
-      if (allProvider.length > 0) {
-        const defaultProvider = allProvider.find(
-          (x) => x.providerId === "gogoanime" || x.providerId === "9anime"
-        );
-        setProviderId(defaultProvider?.providerId || allProvider[0].providerId); // set to first provider id
-      }
+      const providers = allProvider(response, setMapProviders, setProviderId);
 
       setView(Number(localStorage.getItem("view")) || 3);
       setArtStorage(JSON.parse(localStorage.getItem("artplayer_settings")));
-      setProviders(allProvider);
+      setProviders(providers);
       setLoading(false);
     };
     fetchData();
 
     return () => {
+      setCurrentPage(1);
       setProviders(null);
       setMapProviders(null);
     };
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [info.id, isDub]);
 
   const episodes =
@@ -79,9 +85,7 @@ export default function AnimeEpisode({
   const lastEpisodeIndex = currentPage * itemsPerPage;
   const firstEpisodeIndex = lastEpisodeIndex - itemsPerPage;
   let currentEpisodes = episodes.slice(firstEpisodeIndex, lastEpisodeIndex);
-  if (isDub) {
-    currentEpisodes = currentEpisodes.filter((i) => i.hasDub === true);
-  }
+
   const totalPages = Math.ceil(episodes.length / itemsPerPage);
 
   const handleChange = (event) => {
@@ -104,6 +108,7 @@ export default function AnimeEpisode({
     ) {
       setView(3);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerId, episodes]);
 
   useEffect(() => {
@@ -122,6 +127,7 @@ export default function AnimeEpisode({
         setWatch(null);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [episodes]);
 
   useEffect(() => {
@@ -157,6 +163,7 @@ export default function AnimeEpisode({
         return;
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [providerId, artStorage, info.id, session?.user?.name]);
 
   let debounceTimeout;
@@ -172,16 +179,32 @@ export default function AnimeEpisode({
           }${isDub ? "&dub=true" : ""}&refresh=true`
         );
         if (!res.ok) {
-          console.log(res);
-          toast.error("Something went wrong", {
-            position: "bottom-left",
-            autoClose: 3000,
-            hideProgressBar: true,
-            theme: "colored",
-          });
-          setProviders([]);
+          const json = await res.json();
+          if (res.status === 429) {
+            toast.error(json.error);
+            const resp = await fetch(
+              `/api/v2/episode/${info.id}?releasing=${
+                info.status === "RELEASING" ? "true" : "false"
+              }${isDub ? "&dub=true" : ""}`
+            ).then((res) => res.json());
+
+            if (resp) {
+              const providers = allProvider(
+                resp,
+                setMapProviders,
+                setProviderId
+              );
+              setProviders(providers);
+            }
+          } else {
+            toast.error("Something went wrong");
+            setProviders([]);
+          }
           setLoading(false);
         } else {
+          const remainingRequests = res.headers.get("X-RateLimit-Remaining");
+          toast.success("Remaining requests " + remainingRequests);
+
           const data = await res.json();
           const getMap = data.find((i) => i?.map === true) || data[0];
           let allProvider = data;
@@ -213,12 +236,7 @@ export default function AnimeEpisode({
       }, 1000);
     } catch (err) {
       console.log(err);
-      toast.error("Something went wrong", {
-        position: "bottom-left",
-        autoClose: 3000,
-        hideProgressBar: true,
-        theme: "colored",
-      });
+      toast.error("Something went wrong");
     }
   };
 
