@@ -77,7 +77,7 @@ function Footer() {
           <div className="flex items-center gap-5">
             {/* Github Icon */}
             <Link
-              href="https://github.com/Ani-Streamable/Streamable"
+              href="https://github.com/chitrakshbotwala"
               className="w-5 h-5 hover:opacity-75"
             >
               <svg
@@ -103,7 +103,7 @@ function Footer() {
             </Link>
             {/* Discord Icon */}
             <Link
-              href="https://discord.gg/v5fjSdKwr2"
+              href="https://discord.gg/HMV5T9uejt"
               className="w-6 h-6 hover:opacity-75"
             >
               <svg
