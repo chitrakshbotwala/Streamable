@@ -608,3 +608,14 @@ export default function Home({ detail, populars, upComing }) {
     </Fragment>
   );
 }
+<head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-X967K6V0F5"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-X967K6V0F5');
+</script>
+  </head>
